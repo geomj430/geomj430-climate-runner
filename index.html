@@ -2215,6 +2215,7 @@ const INST = {
   balalaika: (f, t, d, v) => { const n = Math.max(1, Math.round(d / 0.065)); for (let k = 0; k < n; k++) voice('triangle', f, t + k * d / n, d / n, v * (0.8 - k * 0.05), { lp: f * 6 }); },
   bells: (f, t, d, v) => { voice('sine', f * 2, t, 1.6, v * 0.5); voice('sine', f * 2 * 2.76, t, 0.6, v * 0.15); },
   glock: (f, t, d, v) => { voice('sine', f * 2, t, 0.55, v * 0.55); voice('sine', f * 2 * 3.01, t, 0.12, v * 0.1); voice('triangle', f, t, Math.min(d, 0.28), v * 0.32); },
+  accordion: (f, t, d, v) => { voice('sawtooth', f, t, d * 0.92, v * 0.24, { a: 0.03, lp: f * 5, vib: 5.5 }); voice('square', f * 1.004, t, d * 0.92, v * 0.13, { a: 0.03, lp: f * 3.5 }); voice('sawtooth', f / 2, t, d * 0.92, v * 0.08, { a: 0.04, lp: f * 2 }); },
   bass: (f, t, d, v) => voice('triangle', f, t, d * 0.9, v, { lp: 650 }),
   pad: (f, t, d, v) => { voice('sawtooth', f, t, d, v * 0.16, { a: 0.35, lp: 900 }); voice('sawtooth', f * 1.006, t, d, v * 0.16, { a: 0.35, lp: 900 }); },
 };
@@ -2238,7 +2239,10 @@ const SONGS = {
   aw: { step: 0.14, n: 16, root: 62, scale: MAJ, skip: [3, 6], prog: [0, 4, 5, 3], lead: 'kalimba', rhythm: 'x..x..x.x..x.x..', comp: 'arp', compI: 'kalimba', compR: 'x.x.x.x.x.x.x.x.', bass: 'x.......x.......', drums: { low: 'x.....x.x.......', high: '....x.......x.x.', shaker: '..x...x...x...x.' } },
   bw: { step: 0.16, n: 16, root: 62, scale: HIJAZ, skip: [], prog: [0, 0, 6, 0], lead: 'oud', rhythm: 'x.xx..x.x.xx.x..', comp: 'drone', bass: '', drums: { low: 'x.....x...x.....', tek: '...x.....x...x.x', cymbal: 'x...............' } },
   bs: { step: 0.155, n: 12, root: 57, scale: MIN, skip: [1, 5], prog: [0, 0, 6, 4], lead: 'fiddle', rhythm: 'x.....x..x..', comp: 'drone', bass: '', drums: { hoof: 'x.xx.xx.xx.x', low: 'x...........' } },
-  cs: { step: 0.15, n: 12, root: 57, scale: HMIN, skip: [], prog: [0, 0, 4, 0], lead: 'mandolin', rhythm: 'xxx.xxx.xx.x', comp: 'strum', compR: 'x..x..x..x..', bass: 'x.....x.....', drums: { jingle: 'x.xx.xx.xx.x', low: 'x.....x.....' } },
+  // Sunny seaside afternoon: accordion tune in G major over offbeat guitar, oom-pah bass and tambourine.
+  cs: { step: 0.15, n: 16, root: 55, scale: MAJ, skip: [], prog: [0, 3, 4, 0], lead: 'accordion', comp: 'strum', compR: '..x...x...x...x.', bass: 'x...x...x...x...',
+    drums: { low: 'x.......x.......', jingle: '..x...x...x...x.', shaker: '.x.x.x.x.x.x.x.x' },
+    tune: ['g---e.c.e.g.a.g.', 'f---a.C.a-f.d.f.', 'g.f.e.d.B-d.g---', 'e---c-----..G.B.', 'c.e.g.C-b.a.g.e.', 'f.a.C---a.g.f.a.', 'g---b.a.g.f.e.d.', 'c-----G.c-------'] },
   cfb: { step: 0.16, n: 12, root: 62, scale: MAJ, skip: [], prog: [0, 3, 4, 0], lead: 'whistle', rhythm: 'x.xx.xx.x..x', comp: 'strum', compR: 'x..x..x..x..', bass: 'x.....x.....', drums: { frame: 'x..x..x..x..', shaker: '.x..x..x..x.' } },
   df: { step: 0.15, n: 12, root: 57, scale: HMIN, skip: [], prog: [0, 3, 4, 0], lead: 'balalaika', rhythm: 'x...x...x.x.', comp: 'strum', compR: '....x...x...', bass: 'x...........', drums: { jingle: 'x.x.x.x.x.x.' } },
   // Title theme: hand-written, bouncy C major tune (G A B c d e f g a b C = scale degrees 4..14; '-' holds, '.' rests).
@@ -2256,7 +2260,7 @@ function buildSong(id, mode) {
     s.drums = n === 16 ? { kick: 'x...x...x...x...', snare: '....x.......x...', hat: 'x.x.x.x.x.x.x.x.' } : { kick: 'x.....x.....', snare: '...x.....x..', hat: 'x.xx.xx.xx.x' };
   }
   if (mode === 'fest') { s.step = Math.max(n === 16 ? 0.12 : 0.135, s.step * 0.92); s.drums = Object.assign({}, s.drums, { clap: n === 16 ? '....x.......x...' : '...x.....x..' }); }
-  if (base.tune) {
+  if (base.tune && mode !== 'boss') {
     const NOTE = 'GABcdefgabC'; s.mel = {};
     base.tune.forEach((row, bar) => { for (let i = 0; i < n; i++) { const k = NOTE.indexOf(row[i]); if (k < 0) continue; let len = 1; while (i + len < n && row[i + len] === '-') len++; s.mel[bar * n + i] = { d: k + 4, len }; } });
     s.deg = d => s.root + s.scale[((d % 7) + 7) % 7] + 12 * Math.floor(d / 7);
