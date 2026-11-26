@@ -1,0 +1,16 @@
+{
+  "name": "기후 러너",
+  "short_name": "기후 러너",
+  "description": "열대우림에서 툰드라까지 쾨펜 기후 8곳을 달리는 횡스크롤 기후 게임",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#cfe8d5",
+  "theme_color": "#6fb36a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
