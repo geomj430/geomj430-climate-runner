@@ -1332,7 +1332,7 @@ function drawPlayer(o) {
 
 /* ---------- audio ---------- */
 let AC = null, muted = false;
-function initAudio() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (AC && AC.state === 'suspended') AC.resume(); musicSetup(); }
+function initAudio() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (AC && AC.state !== 'running' && AC.state !== 'closed') { try { const r = AC.resume(); if (r && r.catch) r.catch(() => {}); } catch (e) {} } musicSetup(); }
 function beep(f = 440, d = 0.1, type = 'sine', v = 0.05, slide = 0) {
   if (muted || !AC) return; const now = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.type = type; o.frequency.setValueAtTime(f, now); if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, f + slide), now + d);
@@ -1357,7 +1357,7 @@ function enterZone(n, attract) {
   G.nextObj = null; // the pre-planned obstacle belongs to the old climate
   G.eventAt = ZONES[n].id === 'bw' ? 0.3 + Math.random() * 0.08 : 0.32 + Math.random() * 0.15;
   G.banner = { t: attract ? 99 : 0 };
-  G.quiz = null; G.quizN = 0; G.hold = false; G.boss = null; G.bossPending = false; G.fest = null; G.shots = [];
+  G.quiz = null; G.quizN = 0; G.capT = 0; G.hold = false; G.boss = null; G.bossPending = false; G.fest = null; G.shots = [];
   G.cardAt = 0.38 + Math.random() * 0.25; G.cardDue = 0; G.cardDone = false; G.queue = [];
   G.herdAt = ZONES[n].herdEvent ? [0.12, 0.45] : [];
   G.orbAt = [0.25 + Math.random() * 0.1, 0.58 + Math.random() * 0.12]; G.orbDue = 0; G.orbsOut = []; G.preHeart = null;
@@ -1410,7 +1410,7 @@ function updateQuiz(dt) {
   // wait until the obstacles already on screen have passed, then freeze the run and ask
   if (q.phase === 'pending' && player.onGround && (q.t > 4 || (G.obs.every(o => o.dead || o.x + o.w < player.x - 10) && G.items.every(it => it.got || it.x < player.x - 16)))) openQuiz(q);
 }
-const QLIMIT = 12;
+const QLIMIT = 12, QGAP = 12;
 let quizTimer = null;
 function openQuiz(q) {
   Object.assign(q, nextQuestion(q.id), { phase: 'open', left: QLIMIT, answered: false });
@@ -1440,7 +1440,7 @@ function answerQuiz(pick) {
 }
 function closeQuiz() {
   clearTimeout(quizTimer); if (state !== 'quiz') return;
-  show(null); G.quiz = null; G.hold = G.bossPending; G.since = -G.speed * 0.5;
+  show(null); G.quiz = null; G.qWait = 0; G.hold = G.bossPending; G.since = -G.speed * 0.5;
   player.inv = Math.max(player.inv, 0.6); keys.down = false; jumpQueued = false; state = 'play'; last = performance.now();
 }
 
@@ -1567,21 +1567,24 @@ function update(dt, attract) {
   const zz = ZONES[g.zi];
   const herdActive = () => (g.queue && g.queue.length > 0) || g.obs.some(o => o.key === 'herd' && !o.dead) || (g.nextObj && g.nextObj.key === 'herd');
   if (zz.herdEvent && g.herdAt.length && zp >= g.herdAt[0] && !g.quiz && !g.bossPending && !g.event && !herdActive()) { g.herdAt.shift(); g.event = { t: 0, dur: 7 }; g.toast = { t: 0, text: '누 떼 대이동!', sub: '세 무리가 연달아 달려와요 · 밟으면 +150점' }; beep(330, 0.3, 'triangle', 0.05, -120); g.queue = ['herd', 'herd', 'herd']; }
-  if (zz.id === 'et' && !g.preHeart && !g.eventDone && !g.event && !g.quiz && zp >= g.eventAt) { g.preHeart = 'due'; g.since = Math.max(g.since, g.gap - g.speed * 0.5); }
+  if (zz.id === 'et' && !g.preHeart && !g.eventDone && !g.event && !g.quiz && g.quizN >= 1 && zp >= g.eventAt) { g.preHeart = 'due'; g.since = Math.max(g.since, g.gap - g.speed * 0.5); }
   if (g.preHeart === 'placed' && !g.items.some(it => it.pre && !it.got && it.x > player.x - 20)) g.preHeart = 'done';
-  if (!zz.herdEvent && !g.eventDone && !g.event && !g.quiz && !g.bossPending && zp >= g.eventAt && (zz.id !== 'et' || g.preHeart === 'done')) { g.event = { t: 0, dur: zz.herdEvent ? 10 : 7 }; g.toast = { t: 0, text: '기상 특보 · ' + zz.event, sub: zz.eventSub }; beep(330, 0.3, 'triangle', 0.05, -120); if (zz.herdEvent) g.queue = ['herd', 'herd', 'herd']; }
+  if (!zz.herdEvent && !g.eventDone && !g.event && !g.quiz && !g.bossPending && g.quizN >= 1 && zp >= g.eventAt && (zz.id !== 'et' || g.preHeart === 'done')) { g.event = { t: 0, dur: zz.herdEvent ? 10 : 7 }; g.toast = { t: 0, text: '기상 특보 · ' + zz.event, sub: zz.eventSub }; beep(330, 0.3, 'triangle', 0.05, -120); if (zz.herdEvent) g.queue = ['herd', 'herd', 'herd']; }
   if (g.event && zz.herdEvent) { g.rumble = (g.rumble || 0) - dt; if (g.rumble <= 0) { g.rumble = 0.38; beep(52 + Math.random() * 10, 0.34, 'triangle', 0.05); } }
   if (g.event) { g.event.t += dt; if (zz.id === 'af' && !RM && Math.random() < dt * 0.45) { g.flash = 0.16; g.flashC = '255,255,240'; beep(70, 0.5, 'triangle', 0.06); } if (g.event.t >= g.event.dur) { g.event = null; g.eventDone = true; } }
   const ev = !!g.event;
 
-  // quiz, boss and festival flow
+  // quiz, boss and festival flow (quizzes keep at least QGAP seconds of running between them)
+  if (!g.quiz && !g.fest && !g.boss) g.qWait = (g.qWait === undefined ? 99 : g.qWait) + dt;
   if (!g.quiz && !g.bossPending && !g.fest) {
     const q1 = g.quizN === 0 && zp >= 0.1 && g.banner.t > 6.6 && !ev && !herdActive() && !(zz.herdEvent && g.herdAt.length);
-    const q2 = g.quizN === 1 && zp >= 0.6 && zp < 0.86 && !ev && !herdActive() && !(zz.herdEvent && g.herdAt.length) && (zz.herdEvent || g.eventDone);
+    const q2 = g.quizN === 1 && zp >= 0.55 && g.qWait >= QGAP && !ev && !herdActive() && !(zz.herdEvent && g.herdAt.length) && (zz.herdEvent || g.eventDone);
     if (q1 || q2) { g.quizN++; g.quiz = { phase: 'pending', t: 0, id: zz.id }; g.hold = true; g.toast = { t: 0, text: '곧 기후 퀴즈!', sub: '앞의 아이템을 먼저 챙겨요' }; }
   }
   if (g.quiz) updateQuiz(dt);
-  if (!g.bossPending && !g.fest && !g.quiz && !g.event && zp >= 0.9 && !herdActive() && !(zz.herdEvent && g.herdAt.length) && g.preHeart !== 'due' && g.preHeart !== 'placed') { g.bossPending = true; g.hold = true; g.event = null; g.eventDone = true; g.queue = []; }
+  // At the end of the climate the run keeps going in place until the second quiz has had its turn (max 14 s).
+  if (!g.bossPending && !g.fest && !g.quiz && zp >= 0.9) g.capT = (g.capT || 0) + dt;
+  if (!g.bossPending && !g.fest && !g.quiz && !g.event && zp >= 0.9 && (g.quizN >= 2 || g.capT > 14) && !herdActive() && !(zz.herdEvent && g.herdAt.length) && g.preHeart !== 'due' && g.preHeart !== 'placed') { g.bossPending = true; g.hold = true; g.event = null; g.eventDone = true; g.queue = []; }
   if (g.bossPending && !g.boss && !g.fest && g.obs.every(o => o.x + o.w < player.x - 30) && g.items.every(it => it.x < player.x)) {
     g.boss = makeBoss(g.zi); g.toast = { t: 0, text: `보스 등장 · ${g.boss.s.name}`, sub: g.orbs ? '머리를 밟거나 X 키로 무지개 구슬을 던져요!' : '달려올 때 머리를 밟고, 날아오는 건 점프·슬라이드로!' }; beep(196, 0.5, 'sawtooth', 0.05, -40);
   }
@@ -2306,11 +2309,13 @@ function musicTick() {
   if (!AC || !MUS.bus) return;
   const want = musicWant(), quiet = muted || musicMuted || !want || AC.state !== 'running';
   if (want !== MUS.key) { MUS.key = want; fadeSongBus(); MUS.song = want ? buildSong(want.split(':')[1], want.split(':')[0]) : null; MUS.step = 0; MUS.nextT = AC.currentTime + 0.06; }
-  try { MUS.bus.gain.setTargetAtTime(state === 'quiz' ? 0.2 : 0.42, AC.currentTime, 0.25); } catch (e) {}
+  const lvl = state === 'quiz' ? 0.2 : 0.42; if (MUS.lvl !== lvl) { MUS.lvl = lvl; try { MUS.bus.gain.setTargetAtTime(lvl, AC.currentTime, 0.25); } catch (e) {} }
   if (quiet || !MUS.song) { fadeSongBus(); MUS.nextT = AC.currentTime + 0.06; return; }
   if (!MUS.songBus) { MUS.songBus = AC.createGain(); MUS.songBus.gain.value = 1; MUS.songBus.connect(MUS.bus); }
   if (MUS.nextT < AC.currentTime - 0.2) MUS.nextT = AC.currentTime + 0.03;
-  while (MUS.nextT < AC.currentTime + 0.12) { try { scheduleStep(MUS.song, MUS.step, MUS.nextT); } catch (e) {} MUS.nextT += MUS.song.step; MUS.step++; }
+  // Schedule 0.35 s ahead so a slow frame on a phone cannot starve the music; a step that is already late
+  // is skipped instead of being played in a clump.
+  while (MUS.nextT < AC.currentTime + 0.35) { if (MUS.nextT >= AC.currentTime - 0.005) { try { scheduleStep(MUS.song, MUS.step, MUS.nextT); } catch (e) {} } MUS.nextT += MUS.song.step; MUS.step++; }
 }
 
 /* ---------- game effects: particles, hit-stop, slow motion, speed lines ---------- */
@@ -2460,7 +2465,7 @@ function frame(ts) {
     if (state === 'play') updParts(dt);
   } else if (state === 'quiz') { updParts(dt); quizTick(dt); G.flash = Math.max(0, G.flash - dt); }
   else if (state === 'ending') { t += dt; updParts(dt); endingTick(dt); }
-  render(); requestAnimationFrame(frame);
+  render(); musicTick(); requestAnimationFrame(frame);
 }
 const show = id => ['menu', 'pauseMenu', 'overMenu', 'dexMenu', 'lbMenu', 'quizMenu'].forEach(m => { $(m).hidden = m !== id; });
 let lastOnly = -1;
@@ -2553,7 +2558,8 @@ function toggleMusic() { initAudio(); musicMuted = !musicMuted; musicLabels(); t
 blurAfter('musicBtn', toggleMusic); blurAfter('titleMusic', toggleMusic); musicLabels();
 // Browsers only allow sound after the first tap or key press, so the title theme starts on the first interaction.
 const WAKE_EV = ['pointerdown', 'keydown', 'touchend', 'click'];
-function wakeAudio() { initAudio(); if (AC && AC.state === 'running') WAKE_EV.forEach(ev => removeEventListener(ev, wakeAudio, true)); }
+// Kept for the whole session: phones can suspend audio (calls, lock screen) and the next tap resumes it.
+function wakeAudio() { if (!AC || AC.state !== 'running') initAudio(); }
 WAKE_EV.forEach(ev => addEventListener(ev, wakeAudio, true));
 blurAfter('muteBtn', () => { muted = !muted; $('muteBtn').textContent = muted ? '소리 켜기' : '소리 끄기'; });
 let returnTo = 'menu';
