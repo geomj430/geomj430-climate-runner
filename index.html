@@ -2047,12 +2047,10 @@ function render() {
   if (G.flash > 0) { ctx.setTransform(K, 0, 0, K, 0, 0); ctx.fillStyle = `rgba(${G.flashC},${G.flash * (RM ? 0.5 : 1.2)})`; ctx.fillRect(0, 0, W, H); }
 }
 
-/* ---------- dex (this browser) and public leaderboard (Supabase) ---------- */
-// 순위표 연결 정보: Supabase 프로젝트의 Project URL과 공개용 anon(publishable) 키를 넣어요.
-// anon 키는 원래 웹페이지에 공개되는 키예요. service_role 키는 절대 넣지 마세요.
-const SUPABASE_URL = '';
-const SUPABASE_KEY = '';
-const ONLINE = !!(SUPABASE_URL && SUPABASE_KEY);
+/* ---------- dex (this browser) and public leaderboard (Google Sheets + Apps Script) ---------- */
+// 순위표 연결 정보: 구글 Apps Script로 배포한 "웹 앱 URL"(https://script.google.com/macros/s/.../exec)을 넣어요.
+const SHEET_URL = '';
+const ONLINE = /^https:\/\/script\.google(usercontent)?\.com\//.test(SHEET_URL);
 let LB = [], lbState = ONLINE ? 'idle' : 'off', lbMode = 'full', lastRun = null, submitted = false;
 function saveCards() { try { localStorage.setItem('climate-run-cards', JSON.stringify([...CARDSTATE])); } catch (e) {} }
 function collectCard(id, k, x, y) {
@@ -2060,16 +2058,18 @@ function collectCard(id, k, x, y) {
   addScore(100, x, y, true, '#9a7ed0'); G.toast = { t: 0, text: isNew ? '새 도감 카드!' : '도감 카드', sub: `${CARDS[id][k][0]} · ${CARDS[id][k][1]}` };
   [988, 1319].forEach((f, i) => setTimeout(() => beep(f, 0.15, 'triangle', 0.05), i * 110)); saveCards();
 }
-async function sbFetch(path, opts = {}) {
-  const ctrl = new AbortController(), tm = setTimeout(() => ctrl.abort(), 10000);
+async function sheetFetch(opts = {}, query = '') {
+  const ctrl = new AbortController(), tm = setTimeout(() => ctrl.abort(), 15000);
   try {
-    const r = await fetch(SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/' + path, Object.assign({}, opts, { signal: ctrl.signal, headers: Object.assign({ apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, SUPABASE_KEY.startsWith('eyJ') ? { Authorization: 'Bearer ' + SUPABASE_KEY } : {}, opts.headers || {}) }));
+    const r = await fetch(SHEET_URL + query, Object.assign({ redirect: 'follow', signal: ctrl.signal }, opts));
     if (!r.ok) { const e = new Error('http ' + r.status); e.status = r.status; throw e; }
-    return r.status === 204 || r.status === 201 ? null : r.json();
+    const d = await r.json();
+    if (!d || !d.ok) { const e = new Error('bad'); e.status = 400; throw e; }
+    return d;
   } finally { clearTimeout(tm); }
 }
 const myNick = () => { try { return localStorage.getItem('climate-run-nick') || ''; } catch (e) { return ''; } };
-const cleanNick = v => v.replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 12);
+const cleanNick = v => v.replace(/[\u0000-\u001f\u007f<>=+@]/g, '').replace(/\s+/g, ' ').trim().slice(0, 12);
 const LOCAL_KEY = 'climate-run-local-board';
 function localBoard() { try { const v = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } }
 function saveLocal(mode, nick, score) {
@@ -2082,14 +2082,14 @@ function saveLocal(mode, nick, score) {
 async function loadLB() {
   if (!ONLINE) { LB = (localBoard()[lbMode] || []).slice(0, 30); lbState = 'local'; renderLB(); return; }
   lbState = 'loading'; renderLB();
-  try { const rows = await sbFetch(`leaderboard?select=nickname,score&mode=eq.${encodeURIComponent(lbMode)}&order=score.desc&limit=30`); LB = Array.isArray(rows) ? rows : []; lbState = 'ok'; }
+  try { const d = await sheetFetch({}, '?mode=' + encodeURIComponent(lbMode)); LB = Array.isArray(d.rows) ? d.rows.slice(0, 30) : []; lbState = 'ok'; }
   catch (e) { lbState = 'err'; }
   renderLB();
 }
 function renderLB() {
   if ($('lbMenu').hidden) return;
   const list = $('lbList'), st = $('lbStatus');
-  if (lbState === 'off') { st.textContent = '순위표가 아직 연결되지 않았어요. 사이트 관리자가 Supabase 정보를 넣으면 열려요.'; list.replaceChildren(); return; }
+  if (lbState === 'off') { st.textContent = '순위표가 아직 연결되지 않았어요. 사이트 관리자가 구글 시트 주소를 넣으면 열려요.'; list.replaceChildren(); return; }
   if (lbState === 'loading') { st.textContent = '순위표를 불러오는 중이에요…'; return; }
   if (lbState === 'err') { st.textContent = '순위표를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침을 눌러 주세요.'; list.replaceChildren(); return; }
   st.textContent = (lbState === 'local' ? '이 기기에 저장된 기록이에요. ' : '') + (LB.length ? '' : '아직 기록이 없어요. 첫 기록의 주인공이 되어 보세요!');
@@ -2114,7 +2114,7 @@ async function submitScore(ev) {
   try { localStorage.setItem('climate-run-nick', nick); } catch (e) {}
   if (!ONLINE) { const ok = saveLocal(lastRun.mode, nick, Math.round(lastRun.score)); submitted = ok; $('subBtn').disabled = ok; el.textContent = ok ? `${nick} 님의 ${lastRun.score.toLocaleString()}점을 이 기기 순위표에 저장했어요!` : '이 브라우저에서는 기록을 저장할 수 없어요.'; return; }
   $('subBtn').disabled = true; el.textContent = '순위표에 올리는 중이에요…';
-  try { await sbFetch('scores', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ nickname: nick, mode: lastRun.mode, score: Math.round(lastRun.score) }) }); submitted = true; el.textContent = `${nick} 님의 ${lastRun.score.toLocaleString()}점을 순위표에 올렸어요!`; }
+  try { await sheetFetch({ method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ nickname: nick, mode: lastRun.mode, score: Math.round(lastRun.score) }) }); submitted = true; el.textContent = `${nick} 님의 ${lastRun.score.toLocaleString()}점을 순위표에 올렸어요!`; }
   catch (e) { $('subBtn').disabled = false; el.textContent = e.status === 400 || e.status === 403 ? '기록을 받을 수 없었어요. 닉네임과 점수를 확인해 주세요.' : '지금은 순위표에 연결할 수 없어요. 잠시 뒤 다시 눌러 주세요.'; }
 }
 function drawCardArt(c, id, k, has) {
