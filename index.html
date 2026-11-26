@@ -1345,6 +1345,7 @@ function newGame() {
 }
 function enterZone(n, attract) {
   G.prevZi = G.zi; G.zi = n; G.fade = 0; G.event = null; G.eventDone = false; G.heartGiven = false;
+  G.nextObj = null; // the pre-planned obstacle belongs to the old climate
   G.eventAt = ZONES[n].id === 'bw' ? 0.3 + Math.random() * 0.08 : 0.32 + Math.random() * 0.15;
   G.banner = { t: attract ? 99 : 0 };
   G.quiz = null; G.quizN = 0; G.hold = false; G.boss = null; G.bossPending = false; G.fest = null; G.shots = [];
