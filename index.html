@@ -269,6 +269,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     <p class="note">지나온 기후</p>
     <ul class="chips" id="oZones"></ul>
     <div class="row">
+      <button id="contBtn" class="btn primary" type="button" hidden>이어하기</button>
       <button id="retryBtn" class="btn primary" type="button">다시 달리기</button>
       <button id="lbBtn2" class="btn" type="button">순위표 보기</button>
       <button id="dexBtn2" class="btn" type="button">기후 도감</button>
@@ -2409,7 +2410,7 @@ function endingTick(dt) {
   }
 }
 function endContinue() { if (state !== 'ending') return; PART.length = 0; state = 'play'; last = performance.now(); }
-function endFinish() { if (state !== 'ending') return; G.cause = '모든 기후를 횡단했어요! 멋진 탐험이었어요'; gameOver(); }
+function endFinish() { if (state !== 'ending') return; G.finished = true; G.cause = '모든 기후를 횡단했어요! 멋진 탐험이었어요'; gameOver(); }
 function endingClick(e) {
   if (G.endT < 2.5) return;
   const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
@@ -2489,10 +2490,12 @@ function gameOver() {
   if (s > b) { b = s; if (only < 0) best = s; try { localStorage.setItem(bestKey(only), String(s)); } catch (e) {} }
   $('overMode').textContent = only < 0 ? '탐험 종료 · 전체 코스' : `탐험 종료 · ${ZONES[only].name} 기후만`;
   $('overCause').textContent = G.cause; $('oScore').textContent = s.toLocaleString(); $('oDist').textContent = `${Math.floor(G.dist / 10).toLocaleString()} m`; $('oBest').textContent = b.toLocaleString();
-  $('oStats').textContent = `최대 콤보 ${G.bestCombo} · 퀴즈 정답 ${G.quizRight}/${G.quizTotal} · 밟아서 퇴치 ${G.stomps} · 보스 ${G.bossKills}` + (G.newCards.length ? ` · 새 도감 카드 ${G.newCards.length}장` : '');
+  $('oStats').textContent = (G.conts ? `이어하기 ${G.conts}번 · ` : '') + `최대 콤보 ${G.bestCombo} · 퀴즈 정답 ${G.quizRight}/${G.quizTotal} · 밟아서 퇴치 ${G.stomps} · 보스 ${G.bossKills}` + (G.newCards.length ? ` · 새 도감 카드 ${G.newCards.length}장` : '');
   $('oZones').innerHTML = G.visited.map(i => { const z = ZONES[i]; return `<li><span class="code" style="--c:${z.kc};--t:${z.kt}">${z.code}</span>${z.name}</li>`; }).join('') + (G.loop ? `<li>${G.loop + 1}${only < 0 ? '회차' : '바퀴째'}까지 달렸어요</li>` : '');
   show('overMenu'); beep(330, 0.5, 'triangle', 0.06, -160);
   prepareSubmit(only < 0 ? 'full' : ZONES[only].id, s);
+  const canCont = only < 0 && !G.finished, cb = $('contBtn'); cb.hidden = !canCont; $('retryBtn').classList.toggle('primary', !canCont);
+  if (canCont) cb.textContent = `${ZONES[G.zi].name} 기후부터 이어하기 · ${Math.floor(s / 2).toLocaleString()}점부터`;
 }
 $('zoneList').innerHTML = ZONES.map((z, i) => `<li><button type="button" class="zonebtn" data-z="${i}" id="zone-${z.id}" aria-label="${z.name} 기후만 달리기"><span class="code" style="--c:${z.kc};--t:${z.kt}">${z.code}</span><span><b>${z.name}</b></span><span class="go" aria-hidden="true">▶</span></button></li>`).join('');
 $('zoneList').addEventListener('click', e => { const b = e.target.closest('.zonebtn'); if (!b) return; b.blur(); startGame(+b.dataset.z); });
@@ -2553,7 +2556,18 @@ ctrlEl.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('blur', clearTouches);
 document.addEventListener('visibilitychange', () => { if (document.hidden) clearTouches(); });
 const blurAfter = (id, fn) => $(id).addEventListener('click', e => { fn(); e.currentTarget.blur(); });
-blurAfter('startBtn', () => startGame(-1)); blurAfter('retryBtn', () => startGame(lastOnly)); blurAfter('homeBtn', toTitle); blurAfter('quitBtn', toTitle);
+blurAfter('startBtn', () => startGame(-1)); blurAfter('retryBtn', () => startGame(lastOnly)); blurAfter('contBtn', continueRun);
+/* Continue a full-course run from the climate where it ended: score is halved, hearts and body temperature reset. */
+function continueRun() {
+  if (state !== 'over' || !G || (G.only ?? -1) >= 0 || G.finished) return;
+  goLandscape(); initAudio(); PART.length = 0; hitStop = 0; slowT = 0;
+  const half = Math.floor(score() / 2); G.bonus = half - Math.floor(G.dist / 10); G.conts = (G.conts || 0) + 1;
+  Object.assign(G, { hearts: 3, temp: 37, combo: 0, obs: [], items: [], pops: [], shots: [], puffs: [], orbsOut: [], since: 0, gap: 520, itemTimer: 2.5, shake: 0, cause: '', newCards: G.newCards || [] });
+  Object.assign(player, { y: GROUND, prevY: GROUND, vy: 0, onGround: true, jumps: 0, slide: false, inv: 1.2 });
+  G.zoneDist = 0; enterZone(G.zi, false); G.prevZi = -1; G.fade = 1;
+  G.toast = { t: 0, text: `${ZONES[G.zi].name} 기후부터 이어 달려요`, sub: `점수가 절반(${half.toLocaleString()}점)이 됐어요` };
+  state = 'play'; jumpQueued = false; keys.down = false; show(null); $('pauseBtn').textContent = '일시정지'; last = performance.now();
+} blurAfter('homeBtn', toTitle); blurAfter('quitBtn', toTitle);
 blurAfter('resumeBtn', togglePause); blurAfter('pauseBtn', togglePause);
 $('musicBtn').textContent = musicMuted ? '음악 켜기' : '음악 끄기';
 function musicLabels() { const tx = musicMuted ? '음악 켜기' : '음악 끄기'; $('musicBtn').textContent = tx; $('titleMusic').textContent = tx; }
