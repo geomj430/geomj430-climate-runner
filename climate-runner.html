@@ -2050,7 +2050,7 @@ function render() {
 
 /* ---------- dex (this browser) and public leaderboard (Google Sheets + Apps Script) ---------- */
 // 순위표 연결 정보: 구글 Apps Script로 배포한 "웹 앱 URL"(https://script.google.com/macros/s/.../exec)을 넣어요.
-const SHEET_URL = '';
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxV9B1zoGPi02WbrrlAG0n6g_Zw3zhLJYS0WYpnSG9m7JLwMeCthqHHyAMZYuR5kv2N/exec';
 const ONLINE = /^https:\/\/script\.google(usercontent)?\.com\//.test(SHEET_URL);
 let LB = [], lbState = ONLINE ? 'idle' : 'off', lbMode = 'full', lastRun = null, submitted = false;
 function saveCards() { try { localStorage.setItem('climate-run-cards', JSON.stringify([...CARDSTATE])); } catch (e) {} }
