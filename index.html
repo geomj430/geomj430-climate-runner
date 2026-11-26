@@ -46,14 +46,22 @@ canvas{display:block;width:100%;height:100%;touch-action:none;border-radius:15px
 #controls #throwBtn{flex:.8;background:#efe2ff;border-color:#b9a0e8;font-size:20px}
 #controls #jumpBtn{background:var(--leaf);color:#fff;border-color:var(--leafD)}
 @media (pointer:coarse) and (orientation:landscape){
-  body{padding-block:6px}
-  #app{grid-template-columns:108px auto 108px;grid-template-areas:"tool tool tool" "left stage right";gap:6px 10px;align-items:center}
+  /* phone landscape: the game fills the full screen height; buttons live in the side strips */
+  :root{padding:0}
+  html,body{height:100%;height:100dvh}
+  body{padding:0}
+  #app{grid-template-columns:minmax(64px,1fr) auto minmax(64px,1fr);grid-template-rows:auto 1fr;grid-template-areas:"tool stage right" "left stage right";gap:0;align-content:stretch;justify-items:stretch;align-items:stretch}
+  #stage{grid-row:1/3;align-self:center;border:0;border-radius:0;box-shadow:none}
+  canvas{border-radius:0}
+  #toolbar{flex-direction:column;flex-wrap:nowrap;gap:6px;padding:8px 6px 0;align-self:start}
+  .toolbar button{font-size:12px;padding:5px 2px;width:100%;white-space:nowrap;border-bottom-width:3px}
   #controls{display:contents}
-  #controls .cl{grid-area:left;display:flex;flex-direction:column;justify-content:flex-end;align-self:end;width:100%}
-  #controls .cr{grid-area:right;display:flex;flex-direction:column;gap:10px;justify-content:flex-end;align-self:end;width:100%}
-  #controls button{flex:none;width:100%;height:72px;font-size:20px}
-  #controls #throwBtn{height:56px;font-size:17px}
-  .toolbar button{font-size:13px;padding:4px 12px}
+  #controls .cl,#controls .cr{display:flex;flex-direction:column;gap:10px;justify-content:flex-end;align-self:end;width:100%;padding:0 6px 14px}
+  #controls .cl{grid-area:left}
+  #controls .cr{grid-area:right}
+  #controls button{flex:none;width:100%;height:68px;font-size:17px;padding:0;white-space:nowrap;letter-spacing:-.5px}
+  #controls #slideBtn{font-size:15px}
+  #controls #throwBtn{height:52px;font-size:15px}
 }
 .rotate{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(207,232,213,.97);padding:24px}
 .rot-card{background:var(--panel);border:4px solid var(--line);border-radius:28px;padding:28px 24px;max-width:340px;text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
@@ -2511,10 +2519,10 @@ function checkOrient() {
 }
 $('rotateSkip').addEventListener('click', () => { rotateSkipped = true; try { sessionStorage.setItem('climate-run-portrait', '1'); } catch (e) {} checkOrient(); });
 function fit() {
-  const app = $('app'), ctr = $('controls'), tb = $('toolbar'), B = 10;
-  const land = !ctr.hidden && matchMedia('(pointer: coarse) and (orientation: landscape)').matches;
-  const aw = Math.max(200, land ? app.clientWidth - 2 * 108 - 20 : app.clientWidth);
-  const ah = Math.max(140, land ? app.clientHeight - tb.offsetHeight - 6 : app.clientHeight - tb.offsetHeight - 10 - (ctr.hidden ? 0 : ctr.offsetHeight + 10));
+  const app = $('app'), ctr = $('controls'), tb = $('toolbar');
+  const land = !ctr.hidden && matchMedia('(pointer: coarse) and (orientation: landscape)').matches, B = land ? 0 : 10;
+  const aw = Math.max(200, land ? app.clientWidth - 2 * Math.min(120, Math.max(64, app.clientWidth * 0.09)) : app.clientWidth);
+  const ah = Math.max(140, land ? app.clientHeight : app.clientHeight - tb.offsetHeight - 10 - (ctr.hidden ? 0 : ctr.offsetHeight + 10));
   let w = aw, h = (w - B) * 9 / 16 + B; if (h > ah) { h = ah; w = (h - B) * 16 / 9 + B; }
   const st = $('stage'); st.style.width = w + 'px'; st.style.height = h + 'px';
   const dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = Math.round((w - B) * dpr); cv.height = Math.round((h - B) * dpr); K = cv.width / W;
