@@ -36,7 +36,9 @@
 1. https://github.com 에 가입하고 오른쪽 위 **+ → New repository**를 눌러요. 이름은 예를 들어 `climate-run`, 공개 범위는 **Public**으로 해요.
 2. 저장소 화면에서 **Add file → Upload files**로 `index.html`, `manifest.webmanifest`, `icon-192.png`, `icon-512.png` 네 파일을 함께 올리고 **Commit changes**를 눌러요.
 3. **Settings → Pages**에서 Source를 **Deploy from a branch**, Branch를 **main / (root)**로 정하고 **Save**를 눌러요.
-4. 1~2분 뒤 `https://<GitHub 아이디>.github.io/climate-run/` 주소로 게임이 열려요. 이 주소를 학생들에게 나눠 주면 돼요.
+4. 1~2분 뒤 `https://<GitHub 아이디>.github.io/<저장소 이름>/` 주소로 게임이 열려요. 이 주소를 학생들에게 나눠 주면 돼요.
+
+> 이 저장소의 게임 주소: **https://geomj430.github.io/geomj430-climate-runner/**
 
 ## 운영하면서
 
