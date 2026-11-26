@@ -2237,12 +2237,12 @@ const SONGS = {
   af: { step: 0.135, n: 16, root: 60, scale: MAJ, skip: [3, 6], prog: [0, 3, 4, 0], lead: 'marimba', rhythm: 'x.x.x.xxx.x.x..x', comp: 'arp', compI: 'marimba', compR: '..x...x...x...x.', bass: 'x.....x.x.......', drums: { shaker: 'x.x.x.x.x.x.x.x.', kick: 'x.......x.......', high: '....x..x.....x..', low: '......x.....x...' } },
   aw: { step: 0.14, n: 16, root: 62, scale: MAJ, skip: [3, 6], prog: [0, 4, 5, 3], lead: 'kalimba', rhythm: 'x..x..x.x..x.x..', comp: 'arp', compI: 'kalimba', compR: 'x.x.x.x.x.x.x.x.', bass: 'x.......x.......', drums: { low: 'x.....x.x.......', high: '....x.......x.x.', shaker: '..x...x...x...x.' } },
   bw: { step: 0.16, n: 16, root: 62, scale: HIJAZ, skip: [], prog: [0, 0, 6, 0], lead: 'oud', rhythm: 'x.xx..x.x.xx.x..', comp: 'drone', bass: '', drums: { low: 'x.....x...x.....', tek: '...x.....x...x.x', cymbal: 'x...............' } },
-  bs: { step: 0.13, n: 12, root: 57, scale: MIN, skip: [1, 5], prog: [0, 0, 6, 4], lead: 'fiddle', rhythm: 'x.....x..x..', comp: 'drone', bass: '', drums: { hoof: 'x.xx.xx.xx.x', low: 'x...........' } },
-  cs: { step: 0.12, n: 12, root: 57, scale: HMIN, skip: [], prog: [0, 0, 4, 0], lead: 'mandolin', rhythm: 'xxx.xxx.xx.x', comp: 'strum', compR: 'x..x..x..x..', bass: 'x.....x.....', drums: { jingle: 'x.xx.xx.xx.x', low: 'x.....x.....' } },
-  cfb: { step: 0.145, n: 12, root: 62, scale: MAJ, skip: [], prog: [0, 3, 4, 0], lead: 'whistle', rhythm: 'x.xx.xx.x..x', comp: 'strum', compR: 'x..x..x..x..', bass: 'x.....x.....', drums: { frame: 'x..x..x..x..', shaker: '.x..x..x..x.' } },
-  df: { step: 0.125, n: 12, root: 57, scale: HMIN, skip: [], prog: [0, 3, 4, 0], lead: 'balalaika', rhythm: 'x...x...x.x.', comp: 'strum', compR: '....x...x...', bass: 'x...........', drums: { jingle: 'x.x.x.x.x.x.' } },
+  bs: { step: 0.155, n: 12, root: 57, scale: MIN, skip: [1, 5], prog: [0, 0, 6, 4], lead: 'fiddle', rhythm: 'x.....x..x..', comp: 'drone', bass: '', drums: { hoof: 'x.xx.xx.xx.x', low: 'x...........' } },
+  cs: { step: 0.15, n: 12, root: 57, scale: HMIN, skip: [], prog: [0, 0, 4, 0], lead: 'mandolin', rhythm: 'xxx.xxx.xx.x', comp: 'strum', compR: 'x..x..x..x..', bass: 'x.....x.....', drums: { jingle: 'x.xx.xx.xx.x', low: 'x.....x.....' } },
+  cfb: { step: 0.16, n: 12, root: 62, scale: MAJ, skip: [], prog: [0, 3, 4, 0], lead: 'whistle', rhythm: 'x.xx.xx.x..x', comp: 'strum', compR: 'x..x..x..x..', bass: 'x.....x.....', drums: { frame: 'x..x..x..x..', shaker: '.x..x..x..x.' } },
+  df: { step: 0.15, n: 12, root: 57, scale: HMIN, skip: [], prog: [0, 3, 4, 0], lead: 'balalaika', rhythm: 'x...x...x.x.', comp: 'strum', compR: '....x...x...', bass: 'x...........', drums: { jingle: 'x.x.x.x.x.x.' } },
   // Title theme: hand-written, bouncy C major tune (G A B c d e f g a b C = scale degrees 4..14; '-' holds, '.' rests).
-  title: { step: 0.118, n: 16, root: 60, scale: MAJ, skip: [], prog: [0, 5, 3, 4], lead: 'glock', comp: 'strum', compR: '..x...x...x...x.', bass: 'x...x.x.x...x.x.',
+  title: { step: 0.125, n: 16, root: 60, scale: MAJ, skip: [], prog: [0, 5, 3, 4], lead: 'glock', comp: 'strum', compR: '..x...x...x...x.', bass: 'x...x.x.x...x.x.',
     drums: { kick: 'x.......x.......', clap: '....x.......x...', shaker: 'x.xxx.xxx.xxx.xx', high: '.............x.x' },
     tune: ['c.e.g-e.f.e.d.c.', 'e-..c.e.a-g.e---', 'f.a.C-a.g.f.e.f.', 'g---d.g.f.e.d---', 'c.e.g-e.f.e.d.c.', 'e-..c.e.a-g.e.c.', 'f.a.C-b.a.g.f.d.', 'e.d.G.B.c-------'] },
   et: { step: 0.2, n: 16, root: 64, scale: MAJ, skip: [3, 6], prog: [0, 5, 3, 4], lead: 'bells', rhythm: 'x.....x...x.....', comp: 'pad', bass: '', drums: { frame: 'x.......x.......' } },
@@ -2251,11 +2251,11 @@ function seeded(str) { let h = 2166136261; for (const ch of str) h = Math.imul(h
 function buildSong(id, mode) {
   const base = SONGS[id], s = Object.assign({}, base, { drums: Object.assign({}, base.drums), skip: base.skip.slice(), prog: base.prog.slice() }), n = s.n;
   if (mode === 'boss') {
-    s.step *= 0.8; s.scale = s.scale === MAJ ? MIN : s.scale; if (s.scale === MIN) s.skip = []; s.prog = [0, 5, 6, 4];
+    s.step = Math.max(n === 16 ? 0.115 : 0.13, s.step * 0.88); s.scale = s.scale === MAJ ? MIN : s.scale; if (s.scale === MIN) s.skip = []; s.prog = [0, 5, 6, 4];
     s.rhythm = n === 16 ? 'x.x.xx.x.x.xx.x.' : 'x.xx.xx.xx.x'; s.comp = 'none'; s.bass = n === 16 ? 'x.x.x.x.x.x.x.x.' : 'x.xx.xx.xx.x';
     s.drums = n === 16 ? { kick: 'x...x...x...x...', snare: '....x.......x...', hat: 'x.x.x.x.x.x.x.x.' } : { kick: 'x.....x.....', snare: '...x.....x..', hat: 'x.xx.xx.xx.x' };
   }
-  if (mode === 'fest') { s.step *= 0.85; s.drums = Object.assign({}, s.drums, { clap: n === 16 ? '....x.......x...' : '...x.....x..' }); }
+  if (mode === 'fest') { s.step = Math.max(n === 16 ? 0.12 : 0.135, s.step * 0.92); s.drums = Object.assign({}, s.drums, { clap: n === 16 ? '....x.......x...' : '...x.....x..' }); }
   if (base.tune) {
     const NOTE = 'GABcdefgabC'; s.mel = {};
     base.tune.forEach((row, bar) => { for (let i = 0; i < n; i++) { const k = NOTE.indexOf(row[i]); if (k < 0) continue; let len = 1; while (i + len < n && row[i + len] === '-') len++; s.mel[bar * n + i] = { d: k + 4, len }; } });
