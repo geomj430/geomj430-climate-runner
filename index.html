@@ -1371,6 +1371,7 @@ function addScore(base, x, y, combo = true, color = '#f0a91a', label) {
   return pts;
 }
 const score = () => Math.floor(G.dist / 10) + G.bonus;
+const MAXH = 4; // start with 3 hearts; picking up hearts can raise it to 4
 let jumpQueued = false; const keys = { down: false };
 
 function hurt(cause, force) {
@@ -1639,7 +1640,7 @@ function update(dt, attract) {
         else if (wantItem) {
           g.itemTimer = (3.4 + Math.random() * 2.4) * (zz.id === 'et' ? 0.6 : 1);
           let type = Math.abs(d) < 0.05 ? (g.temp > 37 ? 'water' : 'warm') : (d < 0 ? 'warm' : 'water');
-          if (g.hearts < 3 && !g.heartGiven && zp > 0.45) { type = 'heart'; g.heartGiven = true; }
+          if (g.hearts < MAXH && !g.heartGiven && zp > 0.45) { type = 'heart'; g.heartGiven = true; }
           g.items.push({ type, x: xi, y: Math.random() < 0.5 ? GROUND - 34 : GROUND - 120, ph: Math.random() * 6 });
         } else {
           const high = Math.random() < 0.4; for (let k = 0; k < 3; k++) g.items.push({ type: 'gem', x: xi - 36 + k * 36, y: (high ? GROUND - 122 : GROUND - 30) - (k === 1 ? 14 : 0), ph: k });
@@ -1687,7 +1688,7 @@ function update(dt, attract) {
     else if (it.type === 'orb') { g.orbs = Math.min(2, g.orbs + 1); [784, 1046, 1319].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'triangle', 0.05), i * 80)); g.pops.push({ text: '무지개 구슬 +1', x: it.x, y: it.y - 20, t: 0, c: '#9a7ed0' }); if (!g.orbTip) { g.orbTip = true; g.toast = { t: 0, text: '무지개 구슬 획득!', sub: '보스가 나오면 X 키(휴대폰은 던지기 버튼)로 던져요' }; } }
     else if (it.type === 'water') { g.temp -= 0.9; beep(560, 0.18, 'sine', 0.06, -200); g.pops.push({ text: '−0.9°C', x: it.x, y: it.y - 18, t: 0, c: '#3f9be0' }); }
     else if (it.type === 'warm') { g.temp += 0.9; beep(440, 0.18, 'sine', 0.06, 200); g.pops.push({ text: '+0.9°C', x: it.x, y: it.y - 18, t: 0, c: '#ef7a45' }); }
-    else if (it.type === 'heart') { beep(784, 0.2, 'triangle', 0.06, 300); if (g.hearts >= 3) { g.bonus += 50; g.pops.push({ text: '하트 가득! +50', x: it.x, y: it.y - 18, t: 0, c: '#ff6f8f' }); } else { g.hearts++; g.pops.push({ text: '+1', x: it.x, y: it.y - 18, t: 0, c: '#ff6f8f' }); } }
+    else if (it.type === 'heart') { beep(784, 0.2, 'triangle', 0.06, 300); if (g.hearts >= MAXH) { g.bonus += 50; g.pops.push({ text: '하트 가득! +50', x: it.x, y: it.y - 18, t: 0, c: '#ff6f8f' }); } else { g.hearts++; g.pops.push({ text: '+1', x: it.x, y: it.y - 18, t: 0, c: '#ff6f8f' }); } }
   }
 }
 
@@ -1752,6 +1753,7 @@ function hud() {
   ctx.textBaseline = 'alphabetic';
   panel(12, 12, 200, 60);
   for (let k = 0; k < 3; k++) { heartPath(34 + k * 28, 31, 10); shape(k < G.hearts ? '#ff7b9c' : '#eadfcf', 2.5); }
+  if (G.hearts >= 4) { const pulse = 1 + Math.sin(t * 6) * 0.06; heartPath(118, 31, 10 * pulse); shape('#ff5c8a', 2.5); ctx.fillStyle = 'rgba(255,255,255,.7)'; ep(114, 26, 3, 2, -0.5); ctx.fill(); }
   ctx.fillStyle = INK; ctx.font = F(17); ctx.textAlign = 'left'; ctx.fillText(`점수 ${score().toLocaleString()}`, 26, 62);
   ctx.fillStyle = '#8a7563'; ctx.textAlign = 'right'; ctx.font = F(13, 'b'); ctx.fillText(`${Math.floor(G.dist / 10).toLocaleString()} m`, 200, 62);
   panel(290, 12, 380, 60); const sx = 306, sw = 348 / ZONES.length;
@@ -2447,11 +2449,10 @@ function drawEnding() {
   });
   drawParts();
   const k = clamp(T / 0.6, 0, 1), cy = 30 + (1 - easeBack(k)) * -140;
-  ctx.save(); rr(150, cy, 660, 108, 26); shape('rgba(255,248,231,0.97)', 4, '#ead9b8');
+  ctx.save(); rr(150, cy, 660, 90, 26); shape('rgba(255,248,231,0.97)', 4, '#ead9b8');
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.lineJoin = 'round';
-  ctx.font = F(36); ctx.lineWidth = 7; ctx.strokeStyle = '#ffffff'; ctx.strokeText('모든 기후를 횡단했어요!', W / 2, cy + 44); ctx.fillStyle = '#e8573a'; ctx.fillText('모든 기후를 횡단했어요!', W / 2, cy + 44);
-  ctx.fillStyle = INK; ctx.font = F(15, 'b'); ctx.fillText('열대우림부터 툰드라까지, 여덟 기후의 친구들이 함께 축하해요', W / 2, cy + 70);
-  ctx.fillStyle = '#4f9150'; ctx.font = F(15); ctx.fillText(`점수 ${score().toLocaleString()} · 퀴즈 정답 ${G.quizRight}/${G.quizTotal} · 보스 퇴치 ${G.bossKills} · 도감 ${CARDSTATE.size}/${ZONES.length * 5}장`, W / 2, cy + 95);
+  ctx.font = F(36); ctx.lineWidth = 7; ctx.strokeStyle = '#ffffff'; ctx.strokeText('모든 기후를 횡단했어요!', W / 2, cy + 46); ctx.fillStyle = '#e8573a'; ctx.fillText('모든 기후를 횡단했어요!', W / 2, cy + 46);
+  ctx.fillStyle = '#4f9150'; ctx.font = F(15); ctx.fillText(`점수 ${score().toLocaleString()} · 퀴즈 정답 ${G.quizRight}/${G.quizTotal} · 보스 퇴치 ${G.bossKills} · 도감 ${CARDSTATE.size}/${ZONES.length * 5}장`, W / 2, cy + 76);
   ctx.restore();
   if (T > 2.5) {
     const a = clamp((T - 2.5) / 0.4, 0, 1); ctx.save(); ctx.globalAlpha *= a;
