@@ -1334,7 +1334,7 @@ function leg(x, s, back, o) {
   const sx = ank[0] + 2.5, sh = back ? o.shoeSh : o.shoe;
   paint(E(sx, -3, 6.5, 4), sh, o.shoeSh, 2.5, 1.5); ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillRect(sx - 5.5, -1.2, 11, 1.4);
 }
-function drawKid(o, ph) {
+function drawKid(o, ph, wave) {
   const back = o.legs === 'shorts' ? SKIN_SH : o.topSh;
   limb([[-3, -29], [-3 - ph * 7, -19]], 6, o.sleeve === 'short' ? SKIN_SH : o.topSh); if (o.sleeve === 'short') limb([[-3, -29], [-3 - ph * 3, -25]], 7, o.topSh);
   paint(C(-3 - ph * 7, -17.5, 3.6), o.mitt ? mix(o.mitt, '#000000', 0.15) : SKIN_SH, null, 2);
@@ -1347,8 +1347,13 @@ function drawKid(o, ph) {
   if (o.legs === 'coat' && o.fur) blob([[-11 + ph, -8, 3], [-5, -7, 3.2], [1, -6.8, 3.2], [7, -7, 3.2], [13 + ph, -8, 3]], o.fur, 1.6);
   torso(o, ph);
   line([[-9, -32], [-4, -14]], '#a86e46', 2.6);
+  if (wave !== undefined) { const a = -1.05 + Math.sin(wave) * 0.32, ex = 17, ey = -30, hx2 = ex + Math.cos(a) * 14, hy2 = ey + Math.sin(a) * 14;
+    limb([[5, -29], [ex, ey], [hx2, hy2]], 6, o.sleeve === 'short' ? SKIN : o.top); if (o.sleeve === 'short') limb([[5, -29], [11, -30]], 7, o.top);
+    paint(C(hx2, hy2 - 1, 4), o.mitt || SKIN, o.mitt ? mix(o.mitt, '#000000', 0.15) : SKIN_SH, 2, 1.2); }
+  else {
   limb([[5, -29], [5 + ph * 7, -19]], 6, o.sleeve === 'short' ? SKIN : o.top); if (o.sleeve === 'short') limb([[5, -29], [5 + ph * 3, -25]], 7, o.top);
   paint(C(5 + ph * 7, -17.5, 3.8), o.mitt || SKIN, o.mitt ? mix(o.mitt, '#000000', 0.15) : SKIN_SH, 2, 1.2);
+  }
   const hx = 1, hy = -47;
   if (o.hat !== 'wrap' && o.hat !== 'hood') blob([[hx - 6, hy + 1, 13], [hx - 9, hy + 8, 7]], HAIR, 2.5);
   paint(C(hx, hy, 14.5), SKIN, SKIN_SH, 3, 3);
@@ -2072,6 +2077,7 @@ function drawCardItem(it) {
 function render() {
   ctx.setTransform(K, 0, 0, K, 0, 0);
   if (state === 'ending') { drawEnding(); return; }
+  if (state === 'intro') { drawIntro(); return; }
   if (G.shake > 0) ctx.translate((Math.random() - 0.5) * 12 * G.shake / 0.3, (Math.random() - 0.5) * 8 * G.shake / 0.3);
   const herdNear = state === 'play' && (G.obs.some(o => o.key === 'herd' && !o.dead && o.x > -o.w) || (G.nextObj && G.nextObj.key === 'herd') || (G.queue && G.queue.length > 0));
   if (herdNear && !RM) ctx.translate(Math.sin(t * 53) * 0.8, Math.sin(t * 41) * 1.6);
@@ -2339,7 +2345,7 @@ function scheduleStep(s, step, at) {
 }
 function musicWant() {
   if (state === 'ending') return 'fest:cfb';
-  if (state === 'title') return 'zone:title';
+  if (state === 'title' || state === 'intro') return 'zone:title';
   if ((state !== 'play' && state !== 'quiz') || !G) return '';
   const id = ZONES[G.zi].id; return (G.fest ? 'fest' : G.boss ? 'boss' : 'zone') + ':' + id;
 }
@@ -2509,6 +2515,7 @@ function frame(ts) {
     if (state === 'play') updParts(dt);
   } else if (state === 'quiz') { updParts(dt); quizTick(dt); G.flash = Math.max(0, G.flash - dt); }
   else if (state === 'ending') { t += dt; updParts(dt); endingTick(dt); }
+  else if (state === 'intro') { t += dt; scroll += dt * 36; updParts(dt); introTick(dt); }
   render(); musicTick(); requestAnimationFrame(frame);
 }
 const show = id => ['menu', 'pauseMenu', 'overMenu', 'dexMenu', 'lbMenu', 'quizMenu'].forEach(m => { $(m).hidden = m !== id; });
@@ -2519,6 +2526,32 @@ function startGame(only = -1) {
   goLandscape(); initAudio(); PART.length = 0; hitStop = 0; slowT = 0; lastOnly = only; newGame(); G.only = only; const zi = only >= 0 ? only : 0;
   enterZone(zi, false); G.prevZi = -1; G.fade = 1; G.visited = [zi];
   state = 'play'; jumpQueued = false; keys.down = false; show(null); $('pauseBtn').textContent = '일시정지';
+}
+/* ---------- intro: a kid in a random climate outfit waves hello; any tap opens the menu ---------- */
+let introT = 0, introZ = 0, introNext = 0;
+function introPick(first) { let n = Math.floor(Math.random() * ZONES.length); if (!first && n === introZ) n = (n + 1 + Math.floor(Math.random() * (ZONES.length - 1))) % ZONES.length; introZ = n; introNext = 4.2;
+  if (!first) { emit(26, { x: W / 2 - 40, y: GROUND - 110, shape: 'star', c: ['#ffd75a', '#ffffff', '#ff8fb1', '#9fe0a0'], g: 0, sp: 200, max: 0.6, s: 4.5 }); beep(880, 0.12, 'triangle', 0.04, 300); } }
+function startIntro() { newGame(); G.banner.t = 99; state = 'intro'; introT = 0; introPick(true); show(null); }
+function introTick(dt) { introT += dt; introNext -= dt; if (introNext <= 0) introPick(false); }
+function endIntro() { if (state !== 'intro') return; initAudio(); PART.length = 0; toTitle(); beep(660, 0.1, 'triangle', 0.05, 200); }
+function drawIntro() {
+  const z = ZONES[introZ], id = z.id; BG[id](0.25); propLayer(id, 0.25);
+  ctx.fillStyle = 'rgba(255,248,231,.28)'; ctx.fillRect(0, 0, W, H);
+  const k = clamp(introT / 0.6, 0, 1), ty = 46 + (1 - easeBack(k)) * -120;
+  ctx.save(); ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.font = F(76); ctx.lineWidth = 14; ctx.strokeStyle = '#ffffff'; ctx.strokeText('기후 러너', W / 2, ty + 62); ctx.lineWidth = 6; ctx.strokeStyle = INK; ctx.strokeText('기후 러너', W / 2, ty + 62); ctx.fillStyle = '#ffcf5a'; ctx.fillText('기후 러너', W / 2, ty + 62);
+  ZONES.forEach((zz, i) => { rr(W / 2 - 150 + i * 37.5 + 2, ty + 80, 33.5, 9, 4.5); shape(zz.kc, 2); }); ctx.restore();
+  const kx = W / 2 - 40, pop = clamp((4.2 - introNext) / 0.35, 0, 1), sc = 3 * (0.6 + 0.4 * easeBack(pop)), bob = Math.abs(Math.sin(t * 3)) * -4;
+  ctx.fillStyle = 'rgba(91,70,54,.22)'; ep(kx + 3, GROUND + 4, 46, 10); ctx.fill();
+  ctx.save(); ctx.translate(kx, GROUND + bob); ctx.scale(sc, sc); drawKid(OUTFIT[id], 0, t * 9); ctx.restore();
+  const bx = kx + 92, by = GROUND - 238;
+  ctx.save(); ctx.globalAlpha *= pop; rr(bx, by, 250, 74, 22); shape('#fff8e7', 3);
+  poly([[bx + 26, by + 70], [bx + 12, by + 96], [bx + 52, by + 72]]); fill('#fff8e7'); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(bx + 26, by + 74); ctx.lineTo(bx + 12, by + 96); ctx.lineTo(bx + 52, by + 74); ctx.stroke();
+  ctx.textAlign = 'left'; ctx.fillStyle = INK; ctx.font = F(22); ctx.fillText('안녕! 같이 달려 볼래?', bx + 20, by + 34);
+  rr(bx + 20, by + 44, 40, 20, 8); shape(z.kc, 2); ctx.fillStyle = z.kt; ctx.font = F(13); ctx.textAlign = 'center'; ctx.fillText(z.code, bx + 40, by + 59);
+  ctx.textAlign = 'left'; ctx.fillStyle = '#8a7563'; ctx.font = F(15); ctx.fillText(`${z.name} 기후 탐험복`, bx + 68, by + 59); ctx.restore();
+  drawParts();
+  if (introT > 0.8) { const by2 = H - 60 - Math.abs(Math.sin(t * 3)) * 4; ctx.save(); rr(W / 2 - 150, by2, 300, 42, 21); shape('#fff8e7', 3, '#ead9b8');
+    ctx.globalAlpha = 0.65 + 0.35 * Math.sin(t * 4); ctx.fillStyle = INK; ctx.font = F(19); ctx.textAlign = 'center'; ctx.fillText('화면을 누르면 시작해요', W / 2, by2 + 28); ctx.restore(); ctx.textAlign = 'left'; }
 }
 function toTitle() { newGame(); G.banner.t = 99; state = 'title'; $('bestTitle').textContent = best.toLocaleString(); show('menu'); }
 function togglePause() {
@@ -2544,6 +2577,7 @@ $('stripes').innerHTML = ZONES.map(z => `<span style="--c:${z.kc}"></span>`).joi
 function onJump() { if (state === 'play') jumpQueued = true; }
 addEventListener('keydown', e => {
   if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if (state === 'intro') { if (['Space', 'Enter', 'ArrowUp'].includes(e.code)) e.preventDefault(); endIntro(); return; }
   if (state === 'quiz') { if (['Space', 'Enter', 'NumpadEnter', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyS'].includes(e.code)) e.preventDefault(); return; }
   if (state === 'ending') { if (['Space', 'Enter'].includes(e.code)) e.preventDefault(); return; }
   if (!$('dexMenu').hidden || !$('lbMenu').hidden) { if (e.code === 'Escape') show(returnTo); return; }
@@ -2569,6 +2603,7 @@ function zoneAction(target, x, y) {
 }
 function ctrlDown(id, target, x, y) {
   const a = zoneAction(target, x, y); if (!a) return false;
+  if (state === 'intro') { endIntro(); return true; }
   if (a === 'slide') { slideTouches.add(id); setSlide(); }
   else if (a === 'throw') { flash(tbtn); throwOrb(); }
   else { flash(jb); onJump(); }
@@ -2577,15 +2612,15 @@ function ctrlDown(id, target, x, y) {
 function ctrlUp(id) { if (slideTouches.delete(id)) setSlide(); }
 function clearTouches() { slideTouches.clear(); setSlide(); }
 if (window.PointerEvent) {
-  cv.addEventListener('pointerdown', e => { e.preventDefault(); if (state === 'ending') { endingClick(e); return; } onJump(); });
+  cv.addEventListener('pointerdown', e => { e.preventDefault(); if (state === 'intro') { endIntro(); return; } if (state === 'ending') { endingClick(e); return; } onJump(); });
   ctrlEl.addEventListener('pointerdown', e => {
     if (ctrlDown(e.pointerId, e.target, e.clientX, e.clientY)) { e.preventDefault(); try { e.target.releasePointerCapture && e.target.releasePointerCapture(e.pointerId); } catch (er) {} }
   });
   addEventListener('pointerup', e => ctrlUp(e.pointerId), true);
   addEventListener('pointercancel', e => ctrlUp(e.pointerId), true);
 } else {
-  cv.addEventListener('touchstart', e => { e.preventDefault(); const tc = e.changedTouches[0]; if (state === 'ending') { endingClick(tc); return; } onJump(); }, { passive: false });
-  cv.addEventListener('mousedown', e => { if (state === 'ending') { endingClick(e); return; } onJump(); });
+  cv.addEventListener('touchstart', e => { e.preventDefault(); const tc = e.changedTouches[0]; if (state === 'intro') { endIntro(); return; } if (state === 'ending') { endingClick(tc); return; } onJump(); }, { passive: false });
+  cv.addEventListener('mousedown', e => { if (state === 'intro') { endIntro(); return; } if (state === 'ending') { endingClick(e); return; } onJump(); });
   ctrlEl.addEventListener('touchstart', e => { let hit = false; for (const tc of e.changedTouches) hit = ctrlDown('t' + tc.identifier, document.elementFromPoint(tc.clientX, tc.clientY) || e.target, tc.clientX, tc.clientY) || hit; if (hit) e.preventDefault(); }, { passive: false });
   const tEnd = e => { for (const tc of e.changedTouches) ctrlUp('t' + tc.identifier); };
   addEventListener('touchend', tEnd, true); addEventListener('touchcancel', tEnd, true);
@@ -2667,7 +2702,7 @@ function boot(data) {
   fit(); addEventListener('resize', () => { fit(); checkOrient(); });
   checkOrient(); try { matchMedia('(orientation: portrait)').addEventListener('change', checkOrient); } catch (e) {}
   try { document.fonts.load('20px Jua'); document.fonts.load('16px "Gowun Dodum"'); } catch (e) {}
-  toTitle(); requestAnimationFrame(ts => { last = ts; requestAnimationFrame(frame); });
+  startIntro(); requestAnimationFrame(ts => { last = ts; requestAnimationFrame(frame); });
 }
 boot({});
 })();
