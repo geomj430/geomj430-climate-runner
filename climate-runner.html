@@ -2605,7 +2605,7 @@ function togglePause() {
 function gameOver() {
   state = 'over'; const s = score(), only = G.only ?? -1; let b = readBest(only);
   if (s > b) { b = s; if (only < 0) best = s; try { localStorage.setItem(bestKey(only), String(s)); } catch (e) {} }
-  $('overMode').textContent = only < 0 ? '탐험 종료 · 전체 코스' : `탐험 종료 · ${ZONES[only].name} 기후만`;
+  $('overMode').textContent = only < 0 ? '탐험 종료 · 전체 기후 일주' : `탐험 종료 · ${ZONES[only].name} 기후만`;
   $('overCause').textContent = G.cause; $('oScore').textContent = s.toLocaleString(); $('oDist').textContent = `${Math.floor(G.dist / 10).toLocaleString()} m`; $('oBest').textContent = b.toLocaleString();
   $('oStats').textContent = (G.conts ? `이어하기 ${G.conts}번 · ` : '') + `최대 콤보 ${G.bestCombo} · 퀴즈 정답 ${G.quizRight}/${G.quizTotal} · 밟아서 퇴치 ${G.stomps} · 보스 ${G.bossKills}` + (G.newCards.length ? ` · 새 도감 카드 ${G.newCards.length}장` : '');
   $('oZones').innerHTML = G.visited.map(i => { const z = ZONES[i]; return `<li><span class="code" style="--c:${z.kc};--t:${z.kt}">${z.code}</span>${z.name}</li>`; }).join('') + (G.loop ? `<li>${G.loop + 1}${only < 0 ? '회차' : '바퀴째'}까지 달렸어요</li>` : '');
@@ -2708,7 +2708,7 @@ function openLB(from) { returnTo = from; show('lbMenu'); loadLB(); }
 $('subForm').addEventListener('submit', submitScore);
 if (!ONLINE) $('lbNote').textContent = '인터넷 순위표가 연결되지 않아서 이 기기(브라우저)에 저장된 기록을 보여줘요. 같은 컴퓨터에서 한 사람들끼리 겨룰 수 있어요.';
 $('lbRefresh').addEventListener('click', e => { e.currentTarget.blur(); loadLB(); });
-$('lbModeSel').innerHTML = '<option value="full">전체 코스</option>' + ZONES.map(z => `<option value="${z.id}">${z.name} 기후만</option>`).join('');
+$('lbModeSel').innerHTML = '<option value="full">전체 기후 일주</option>' + ZONES.map(z => `<option value="${z.id}">${z.name} 기후만</option>`).join('');
 $('lbModeSel').addEventListener('change', e => { lbMode = e.target.value; loadLB(); });
 blurAfter('dexBtn', () => openDex('menu')); blurAfter('lbBtn', () => openLB('menu'));
 blurAfter('lbBtn2', () => { lbMode = lastOnly < 0 ? 'full' : ZONES[lastOnly].id; $('lbModeSel').value = lbMode; openLB('overMenu'); });
