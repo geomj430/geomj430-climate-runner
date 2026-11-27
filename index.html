@@ -1541,7 +1541,7 @@ function addScore(base, x, y, combo = true, color = '#f0a91a', label) {
   G.pops.push({ text: label || `+${pts}`, x, y, t: 0, c: color });
   return pts;
 }
-const score = () => Math.floor(G.dist / 10) + G.bonus;
+const score = () => Math.floor(G.dist / 10) + G.bonus - (G.base || 0); // G.base: points banked by earlier laps
 const MAXH = 4; // start with 3 hearts; picking up hearts can raise it to 4
 let jumpQueued = false; const keys = { down: false };
 
@@ -1639,7 +1639,7 @@ function advPlan(B, k) {
 function bnext(B, st) {
   B.st = st; B.t = 0; const k = B.maxHp - B.hp;
   if (st === 'throw') { let i; do { i = Math.floor(Math.random() * THROWS.length); } while (i === B.lastPat && THROWS.length > 1); B.lastPat = i;
-    B.shots = THROWS[i].map(([kind, v, gap]) => ({ kind, v, gap: Math.max(0.34, gap * (1 - 0.05 * k)) })); B.n = B.shots.length; B.cool = 0.5; }
+    B.shots = THROWS[i].map(([kind, v, gap]) => ({ kind, v, gap: Math.max(0.34, gap * 0.92 * (1 - 0.05 * k)) })); B.n = B.shots.length; B.cool = 0.5; }
   if (st === 'adv') B.plan = advPlan(B, k);
   if (st === 'idle') B.idleT = Math.max(0.2, 0.3 + Math.random() * 0.7 - k * 0.07);
 }
@@ -1733,7 +1733,7 @@ function startFest() {
 
 function update(dt, attract) {
   const g = G;
-  g.speed = attract ? 260 : g.fest ? 0 : Math.min(640, 345 + g.dist * 0.0032) + g.loop * 45;
+  g.speed = attract ? 260 : g.fest ? 0 : Math.min(660, 365 + g.dist * 0.0034) + g.loop * 45;
   const dx = g.speed * dt; scroll += dx;
   if (!attract) g.dist += dx;
   // Stage progress follows time at the starting pace (not distance), so every climate lasts about as long even as the run speeds up.
@@ -1775,7 +1775,7 @@ function update(dt, attract) {
   if (g.fest) {
     g.fest.t += dt; for (const pt of g.fest.petals) { pt.x += pt.vx * dt + Math.sin(t * 2 + pt.r) * 0.4; pt.y += pt.vy * dt; pt.r += pt.vr * dt; if (pt.y > H + 10) { pt.y = -10; pt.x = Math.random() * W; } }
     if (g.fest.t > 6.2) { g.fest = null; g.bossPending = false; g.hold = false; g.zoneDist = ZONE_LEN; g.since = -g.speed * 0.3;
-      if (g.only < 0 && g.zi === ZONES.length - 1 && !g.endingShown) { g.endingShown = true; startEnding(); return; } }
+      if (g.only < 0 && g.zi === ZONES.length - 1) { if (!g.endingShown) { g.endingShown = true; startEnding(); } else lapBreak(); return; } }
   }
 
   physics(dt, false); if (state !== 'play') return;
@@ -2802,7 +2802,23 @@ function endingTick(dt) {
     beep(500 + Math.random() * 500, 0.1, 'triangle', 0.025, 500);
   }
 }
-function endContinue() { if (state !== 'ending') return; PART.length = 0; state = 'play'; last = performance.now(); }
+function endContinue() { if (state !== 'ending') return; PART.length = 0; lapBreak(); }
+/* A finished lap of the full course is recorded on its own: show its score (it can go on the leaderboard),
+   then the next lap starts again from 0 points. */
+function lapBreak() {
+  state = 'lap'; G.lapBreak = true; const s = score(); let b = readBest(-1);
+  if (s > b) { b = s; best = s; try { localStorage.setItem(bestKey(-1), String(s)); } catch (e) {} }
+  $('overMode').textContent = `${G.loop + 1}회차 완주 · 전체 기후 일주`; $('overCause').textContent = '모든 기후를 한 바퀴 돌았어요!';
+  $('oScore').textContent = s.toLocaleString(); $('oDist').textContent = `${Math.floor(G.dist / 10).toLocaleString()} m`; $('oBest').textContent = b.toLocaleString();
+  $('oStats').textContent = `최대 콤보 ${G.bestCombo} · 퀴즈 정답 ${G.quizRight}/${G.quizTotal} · 밟아서 퇴치 ${G.stomps} · 보스 ${G.bossKills}`;
+  $('oZones').innerHTML = ZONES.map(z => `<li><span class="code" style="--c:${z.kc};--t:${z.kt}">${z.code}</span>${z.name}</li>`).join('');
+  show('overMenu'); prepareSubmit('full', s);
+  const cb = $('contBtn'); cb.hidden = false; cb.textContent = `${G.loop + 2}회차 계속 달리기 · 0점부터`; $('retryBtn').hidden = true;
+}
+function resumeLap() {
+  if (state !== 'lap') return; G.lapBreak = false; G.base = (G.base || 0) + score(); G.conts = 0;
+  $('retryBtn').hidden = false; show(null); jumpQueued = false; keys.down = false; state = 'play'; last = performance.now();
+}
 function endFinish() { if (state !== 'ending') return; G.finished = true; G.cause = '모든 기후를 횡단했어요! 멋진 탐험이었어요'; gameOver(); }
 function endingClick(e) {
   if (G.endT < 2.5) return;
@@ -2914,7 +2930,7 @@ function togglePause() {
 function gameOver() {
   state = 'over'; const s = score(), only = G.only ?? -1; let b = readBest(only);
   if (s > b) { b = s; if (only < 0) best = s; try { localStorage.setItem(bestKey(only), String(s)); } catch (e) {} }
-  $('overMode').textContent = only < 0 ? '탐험 종료 · 전체 기후 일주' : `탐험 종료 · ${ZONES[only].name} 기후만`;
+  $('retryBtn').hidden = false; $('overMode').textContent = only < 0 ? `탐험 종료 · 전체 기후 일주${G.loop ? ` ${G.loop + 1}회차` : ''}` : `탐험 종료 · ${ZONES[only].name} 기후만`;
   $('overCause').textContent = G.cause || '아쉬워요! 다시 달려 볼까요?'; $('oScore').textContent = s.toLocaleString(); $('oDist').textContent = `${Math.floor(G.dist / 10).toLocaleString()} m`; $('oBest').textContent = b.toLocaleString();
   $('oStats').textContent = (G.conts ? `이어하기 ${G.conts}번 · ` : '') + `최대 콤보 ${G.bestCombo} · 퀴즈 정답 ${G.quizRight}/${G.quizTotal} · 밟아서 퇴치 ${G.stomps} · 보스 ${G.bossKills}` + (G.newCards.length ? ` · 새 도감 카드 ${G.newCards.length}장` : '');
   $('oZones').innerHTML = G.visited.map(i => { const z = ZONES[i]; return `<li><span class="code" style="--c:${z.kc};--t:${z.kt}">${z.code}</span>${z.name}</li>`; }).join('') + (G.loop ? `<li>${G.loop + 1}${only < 0 ? '회차' : '바퀴째'}까지 달렸어요</li>` : '');
@@ -2987,12 +3003,12 @@ ctrlEl.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('blur', clearTouches);
 document.addEventListener('visibilitychange', () => { if (document.hidden) clearTouches(); });
 const blurAfter = (id, fn) => $(id).addEventListener('click', e => { fn(); e.currentTarget.blur(); });
-blurAfter('startBtn', () => startGame(-1)); blurAfter('retryBtn', () => startGame(lastOnly)); blurAfter('contBtn', continueRun);
+blurAfter('startBtn', () => startGame(-1)); blurAfter('retryBtn', () => startGame(lastOnly)); blurAfter('contBtn', () => (G && G.lapBreak ? resumeLap() : continueRun()));
 /* Continue a full-course run from the climate where it ended: score is halved, hearts and body temperature reset. */
 function continueRun() {
   if (state !== 'over' || !G || (G.only ?? -1) >= 0 || G.finished) return;
   goLandscape(); initAudio(); PART.length = 0; hitStop = 0; slowT = 0;
-  const half = Math.floor(score() / 2); G.bonus = half - Math.floor(G.dist / 10); G.conts = (G.conts || 0) + 1;
+  const half = Math.floor(score() / 2); G.bonus += half - score(); G.conts = (G.conts || 0) + 1;
   Object.assign(G, { hearts: 3, temp: 37, combo: 0, obs: [], items: [], pops: [], shots: [], puffs: [], orbsOut: [], since: 0, gap: 520, itemTimer: 2.5, shake: 0, cause: '', newCards: G.newCards || [] });
   Object.assign(player, { y: GROUND, prevY: GROUND, vy: 0, onGround: true, jumps: 0, slide: false, inv: 1.2 });
   G.zoneDist = 0; enterZone(G.zi, false); G.prevZi = -1; G.fade = 1;
