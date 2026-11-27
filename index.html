@@ -109,6 +109,7 @@ kbd{font:13px var(--display);padding:2px 9px;border-radius:8px;background:#fff;b
 button{cursor:pointer}
 .btn{font:20px var(--display);padding:11px 26px;border-radius:999px;border:3px solid var(--line);border-bottom-width:6px;background:#fff;color:var(--ink)}
 .btn.primary{background:var(--leaf);color:#fff;border-color:var(--leafD)}
+.btn.push-end{margin-left:auto}
 .btn:active{transform:translateY(2px);border-bottom-width:4px}
 button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
 .best{margin:0;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -212,7 +213,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     <div class="stripes" aria-hidden="true" id="stripes"></div>
     <p class="lede">아마존 열대우림에서 북극 툰드라까지 달려서 건너요. 기후가 바뀔 때마다 풍경, 장애물, 날씨가 달라져요. 체온을 36~38.5°C 사이로 지켜야 끝까지 갈 수 있어요.</p>
     <div class="row">
-      <button id="startBtn" class="btn primary" type="button">전체 코스 달리기</button>
+      <button id="startBtn" class="btn primary" type="button">전체 기후 일주</button>
       <p class="best">최고 기록 <span id="bestTitle">0</span>점</p>
     </div>
     <p class="pick">기후 하나만 골라 달리기</p>
@@ -233,8 +234,8 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     </dl>
     <div class="row">
       <button id="dexBtn" class="btn" type="button">기후 도감</button>
-      <button id="titleMusic" class="btn small" type="button">음악 끄기</button>
       <button id="lbBtn" class="btn" type="button">순위표</button>
+      <button id="titleMusic" class="btn push-end" type="button">음악 끄기</button>
     </div>
   </div>
 </section>
