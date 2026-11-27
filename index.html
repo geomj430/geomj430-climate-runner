@@ -1272,9 +1272,13 @@ function drawHat(hx, hy, o) {
       paint(() => { ctx.beginPath(); ctx.arc(hx, hy - 10, 13.5, Math.PI, 0); ctx.closePath(); }, c, dk, 3, 3); paint(E(hx + 2, hy - 10, 25, 4.5), c, dk, 3, 2);
       ctx.fillStyle = '#8a6a3a'; ctx.fillRect(hx - 13, hy - 15, 26, 3.5); ctx.strokeStyle = 'rgba(91,70,54,.5)'; ctx.setLineDash([2, 2]); ctx.lineWidth = 1; ep(hx + 2, hy - 10, 20, 3); ctx.stroke(); ctx.setLineDash([]); break; }
     case 'wrap': {
-      paint(C(hx - 1, hy, 17.5), c, dk, 3, 4); paint(E(hx + 6, hy + 2, 10, 11), SKIN, SKIN_SH, 2, 2);
+      // the loose end of the cloth hangs down the back and sways
+      const sw = Math.sin(t * 5) * 2.2, tail = () => { ctx.beginPath(); ctx.moveTo(hx - 9, hy + 1); ctx.quadraticCurveTo(hx - 21 + sw * 0.5, hy + 6, hx - 24 + sw, hy + 21); ctx.quadraticCurveTo(hx - 22 + sw, hy + 26, hx - 16 + sw, hy + 24); ctx.quadraticCurveTo(hx - 13 + sw * 0.5, hy + 14, hx - 3, hy + 10); ctx.closePath(); };
+      paint(tail, c, dk, 2.5, 2); clipDo(tail, () => { ctx.strokeStyle = dk; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(hx - 10, hy + 5); ctx.quadraticCurveTo(hx - 18 + sw * 0.5, hy + 10, hx - 20 + sw, hy + 22); ctx.moveTo(hx - 7, hy + 8); ctx.quadraticCurveTo(hx - 14 + sw * 0.5, hy + 13, hx - 17 + sw, hy + 23); ctx.stroke(); });
+      paint(C(hx - 1, hy, 17.5), c, dk, 3, 4);
       ctx.strokeStyle = dk; ctx.lineWidth = 1.5; for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(hx - 4, hy, 10 + k * 2.5, Math.PI * 0.6, Math.PI * 1.3); ctx.stroke(); }
-      paint(PL([[hx - 12, hy - 2], [hx - 30, hy + 8 + flap], [hx - 14, hy + 13]]), c, dk, 2.5, 2); ctx.fillStyle = '#5b8fd0'; ctx.fillRect(hx - 17, hy - 12, 24, 3.5); break; }
+      clipDo(C(hx - 1, hy, 16), () => { ctx.strokeStyle = '#5b8fd0'; ctx.lineWidth = 3.6; ctx.beginPath(); ctx.arc(hx + 2, hy + 15, 28, Math.PI * 1.2, Math.PI * 1.75); ctx.stroke(); ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(hx + 2, hy + 15, 29, Math.PI * 1.25, Math.PI * 1.7); ctx.stroke(); });
+      paint(E(hx + 6, hy + 2, 10, 11), SKIN, SKIN_SH, 2, 2); break; }
     case 'cap': {
       const dome = () => { ctx.beginPath(); ctx.arc(hx, hy - 6, 15, Math.PI, 0); ctx.closePath(); };
       paint(dome, c, dk, 3, 3); clipDo(dome, () => { ctx.fillStyle = '#ffffff'; ctx.fillRect(hx + 2, hy - 23, 14, 18); });
@@ -2092,6 +2096,19 @@ function drawCardItem(it) {
   for (let k = 0; k < 3; k++) { const a = t * 2 + k * 2.1; starPath(x + Math.cos(a) * 26, y + Math.sin(a) * 20, 4); fill('#fff6c8'); }
 }
 
+/* The score / hearts / climate / temperature panels change slowly, so they are drawn into a cached
+   layer at most 20 times a second (or right away when hearts, orbs, climate or combo change). */
+let hudC = null, hudT = 0, hudKey = '';
+function drawHudCached() {
+  if (!hudC || hudC.width !== cv.width || hudC.height !== cv.height) { hudC = document.createElement('canvas'); hudC.width = cv.width; hudC.height = cv.height; hudKey = ''; }
+  const now = performance.now(), key = `${G.hearts}|${G.orbs}|${G.zi}|${G.combo > 0}|${K}`;
+  if (key !== hudKey || now - hudT > 50) {
+    hudKey = key; hudT = now; const hc = hudC.getContext('2d'), saved = ctx;
+    hc.setTransform(1, 0, 0, 1, 0, 0); hc.clearRect(0, 0, hudC.width, hudC.height); hc.setTransform(K, 0, 0, K, 0, 0);
+    ctx = hc; try { hud(); orbHud(); } finally { ctx = saved; }
+  }
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(hudC, 0, 0); ctx.restore();
+}
 function render() {
   ctx.setTransform(K, 0, 0, K, 0, 0);
   if (state === 'ending') { drawEnding(); return; }
@@ -2131,7 +2148,7 @@ function render() {
       const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95); g.addColorStop(0, `rgba(${col},0)`); g.addColorStop(1, `rgba(${col},${Math.min(0.6, 0.2 + k * 0.45) * pulse})`); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     }
     for (const pp of G.pops) { ctx.globalAlpha = 1 - pp.t; ctx.font = F(pp.big ? 26 : 20); ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.lineJoin = 'round'; ctx.strokeStyle = '#fff'; ctx.strokeText(pp.text, pp.x, pp.y); ctx.fillStyle = pp.c; ctx.fillText(pp.text, pp.x, pp.y); } ctx.globalAlpha = 1;
-    hud(); comboHud(); orbHud(); bossHud(); bannerCard(); toastDraw();
+    drawHudCached(); comboHud(); bossHud(); bannerCard(); toastDraw();
   }
   if (G.flash > 0) { ctx.setTransform(K, 0, 0, K, 0, 0); ctx.fillStyle = `rgba(${G.flashC},${G.flash * (RM ? 0.5 : 1.2)})`; ctx.fillRect(0, 0, W, H); }
 }
@@ -2449,9 +2466,9 @@ function fxItem(it) {
   else if (it.type === 'orb') { emit(12, { x, y, shape: 'star', c: ['#ff8fb1', '#ffd75a', '#9fe0a0', '#7cc4f0', '#b9a0e8'], g: 100, sp: 200, max: 0.6, s: 4 }); fxRing(x, y, '#ffffff'); }
   else if (it.type === 'card') { emit(16, { x, y, shape: 'star', c: ['#ff8fb1', '#ffd75a', '#9fe0a0', '#7cc4f0', '#b9a0e8'], g: 120, sp: 220, max: 0.7, s: 4 }); fxRing(x, y, '#b9a0e8'); }
 }
-function fxStomp(x, y) { hitStop = Math.max(hitStop, 0.06); G.shake = RM ? 0 : Math.max(G.shake, 0.12); emit(8, { x, y, shape: 'star', c: ['#ffd75a', '#ffffff'], g: 300, sp: 230, max: 0.5, s: 4.5 }); fxRing(x, y, '#ffffff'); }
+function fxStomp(x, y) { hitStop = Math.max(hitStop, 0.03); G.shake = RM ? 0 : Math.max(G.shake, 0.12); emit(8, { x, y, shape: 'star', c: ['#ffd75a', '#ffffff'], g: 300, sp: 230, max: 0.5, s: 4.5 }); fxRing(x, y, '#ffffff'); }
 function fxHurt() { const p = player; emit(10, { x: p.x + 18, y: p.y - 30, c: ['#ff7b9c', '#ffb3b3'], g: 400, sp: 200, max: 0.45, s: 3.5 }); }
-function fxBossHit(x, y) { hitStop = Math.max(hitStop, 0.12); emit(14, { x, y, shape: 'star', c: ['#ffd75a', '#ffffff', '#ff8a6a'], g: 350, sp: 300, max: 0.6, s: 5 }); emit(1, { x, y, shape: 'ring', c: '#ffd75a', g: 0, sp: 0, max: 0.5, s: 14 }); }
+function fxBossHit(x, y) { hitStop = Math.max(hitStop, 0.06); emit(14, { x, y, shape: 'star', c: ['#ffd75a', '#ffffff', '#ff8a6a'], g: 350, sp: 300, max: 0.6, s: 5 }); emit(1, { x, y, shape: 'ring', c: '#ffd75a', g: 0, sp: 0, max: 0.5, s: 14 }); }
 function fxConfetti(x, y, n) { emit(n, { x, y, shape: 'confetti', c: ['#ff8fb1', '#ffd75a', '#9fe0a0', '#7cc4f0', '#b9a0e8', '#ff9a6b'], g: 420, sp: 360, ang: -Math.PI / 2, cone: 2.4, max: 1.2, s: 4.5 }); }
 function fxQuiz(ok, x, y) { if (ok) { fxConfetti(x, y, 36); fxRing(x, y, '#9fe0a0'); } else emit(8, { x, y, c: 'rgba(160,150,140,.8)', g: -20, sp: 60, max: 0.6, s: 7, grow: 1 }); }
 
@@ -2525,7 +2542,16 @@ function drawEnding() {
 }
 
 /* ---------- loop & UI ---------- */
+/* Adaptive resolution: when frames stay slow during play (under ~48 fps for 2 s), draw the canvas
+   at a lower internal resolution, one step at a time. */
+const RSCALE = [1, 0.8, 0.65, 0.5]; let rsStep = 0, gapEma = 16.7, slowFor = 0;
+function watchFrames(gapMs) {
+  if (state !== 'play' || gapMs <= 0 || gapMs > 250 || rsStep >= RSCALE.length - 1) { slowFor = 0; return; }
+  gapEma += (gapMs - gapEma) * 0.06; slowFor = gapEma > 21 ? slowFor + gapMs : 0;
+  if (slowFor > 2000 && (window.devicePixelRatio || 1) * RSCALE[rsStep] > 1.01) { rsStep++; slowFor = 0; gapEma = 16.7; fit(); }
+}
 function frame(ts) {
+  watchFrames(ts - last);
   const dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts;
   if (state === 'play' || state === 'title') {
     if (hitStop > 0) hitStop -= dt;
@@ -2710,7 +2736,7 @@ function fit() {
   const ah = Math.max(140, land ? app.clientHeight : app.clientHeight - tb.offsetHeight - 10 - (ctr.hidden ? 0 : ctr.offsetHeight + 10));
   let w = aw, h = (w - B) * 9 / 16 + B; if (h > ah) { h = ah; w = (h - B) * 16 / 9 + B; }
   const st = $('stage'); st.style.width = w + 'px'; st.style.height = h + 'px';
-  const dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = Math.round((w - B) * dpr); cv.height = Math.round((h - B) * dpr); K = cv.width / W;
+  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1) * RSCALE[rsStep]); cv.width = Math.round((w - B) * dpr); cv.height = Math.round((h - B) * dpr); K = cv.width / W;
 }
 function boot(data) {
   if (data && data.best) best = Math.max(best, data.best);
