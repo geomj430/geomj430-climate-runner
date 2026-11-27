@@ -220,7 +220,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     <ol class="zones" id="zoneList"></ol>
     <p class="note">기후를 누르면 그 기후만 계속 달려요. 노선 색은 쾨펜 기후 지도의 범례 색을 따랐어요.</p>
     <dl class="howto">
-      <dt><kbd>Space</kbd><kbd>↑</kbd></dt><dd>점프 · 공중에서 한 번 더 누르면 2단 점프</dd>
+      <dt><kbd>↑</kbd></dt><dd>점프 · 공중에서 한 번 더 누르면 2단 점프</dd>
       <dt><kbd>↓</kbd></dt><dd>슬라이드 · 늘어진 덩굴이나 날아오는 물체 아래로</dd>
       <dt><span class="dot" style="background:#7cc4f0"></span> 물병</dt><dd>체온 −0.9°C · 더운 기후에서 나와요</dd>
       <dt><span class="dot" style="background:#ff9a6b"></span> 따뜻한 차</dt><dd>체온 +0.9°C · 추운 기후와 사막의 밤에 나와요</dd>
@@ -229,7 +229,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
       <dt>콤보</dt><dd>별·밟기·퀴즈 정답이 이어지면 점수 최대 ×5 · 부딪히면 처음부터</dd>
       <dt>기후 퀴즈</dt><dd>퀴즈가 나오면 게임이 잠깐 멈춰요 · 마우스로 클릭하거나 화면을 터치해 답을 골라요</dd>
       <dt>보스</dt><dd>기후가 끝날 때 등장 · 달려올 때 머리를 밟거나 무지개 구슬을 던져 퇴치</dd>
-      <dt><span class="dot" style="background:linear-gradient(135deg,#ff8fb1,#ffd75a,#9fe0a0,#7cc4f0)"></span> 무지개 구슬</dt><dd>최대 2개 · 보스에게만 <kbd>X</kbd> 키(휴대폰은 던지기 버튼)로 던져요</dd>
+      <dt><span class="dot" style="background:linear-gradient(135deg,#ff8fb1,#ffd75a,#9fe0a0,#7cc4f0)"></span> 무지개 구슬</dt><dd>최대 2개 · 보스에게만 <kbd>Space</kbd>(휴대폰은 던지기 버튼)로 던져요</dd>
       <dt><span class="dot" style="background:#b9a0e8;border-radius:3px"></span> 도감 카드</dt><dd>보라색 카드를 모아 기후 도감을 채워요</dd>
     </dl>
     <div class="row">
@@ -1609,7 +1609,7 @@ function drawOrb(x, y, r, spin) {
 function orbHud() {
   const x = G.combo > 0 ? 170 : 12, y = 78; rr(x, y, 96, 30, 15); shape('rgba(255,248,231,0.94)', 3, '#ead9b8');
   for (let k = 0; k < 2; k++) { if (k < G.orbs) drawOrb(x + 20 + k * 26, y + 15, 9, t * 2); else { cp(x + 20 + k * 26, y + 15, 9); shape('#efe6d6', 2, '#d9c9a8'); } }
-  ctx.fillStyle = '#8a7563'; ctx.font = F(13); ctx.textAlign = 'center'; ctx.fillText('X', x + 80, y + 20);
+  ctx.fillStyle = '#8a7563'; ctx.font = F(10); ctx.textAlign = 'center'; ctx.fillText('Space', x + 78, y + 19);
 }
 function startFest() {
   G.boss = null; G.shots = []; G.toast = null;
@@ -1654,7 +1654,7 @@ function update(dt, attract) {
   if (!g.bossPending && !g.fest && !g.quiz && zp >= 0.9) g.capT = (g.capT || 0) + dt;
   if (!g.bossPending && !g.fest && !g.quiz && !g.event && zp >= 0.9 && (g.quizN >= 2 || g.capT > 14) && !herdActive() && !(zz.herdEvent && g.herdAt.length) && g.preHeart !== 'due' && g.preHeart !== 'placed') { g.bossPending = true; g.hold = true; g.event = null; g.eventDone = true; g.queue = []; }
   if (g.bossPending && !g.boss && !g.fest && g.obs.every(o => o.x + o.w < player.x - 30) && g.items.every(it => it.x < player.x)) {
-    g.boss = makeBoss(g.zi); g.toast = { t: 0, text: `보스 등장 · ${g.boss.s.name}`, sub: g.orbs ? '머리를 밟거나 X 키로 무지개 구슬을 던져요!' : '달려올 때 머리를 밟고, 날아오는 건 점프·슬라이드로!' }; beep(196, 0.5, 'sawtooth', 0.05, -40);
+    g.boss = makeBoss(g.zi); g.toast = { t: 0, text: `보스 등장 · ${g.boss.s.name}`, sub: g.orbs ? '머리를 밟거나 스페이스바로 무지개 구슬을 던져요!' : '달려올 때 머리를 밟고, 날아오는 건 점프·슬라이드로!' }; beep(196, 0.5, 'sawtooth', 0.05, -40);
   }
   if (g.boss) updateBoss(dt);
   if (g.fest) {
@@ -1752,7 +1752,7 @@ function update(dt, attract) {
     if (!hitBox(pb, { x: it.x - 14, y: it.y - 14, w: 28, h: 28 })) continue; it.got = true; fxItem(it);
     if (it.type === 'gem') { addScore(20, it.x, it.y - 16, true, '#f0a91a'); beep(1046, 0.08, 'triangle', 0.04); }
     else if (it.type === 'card') collectCard(zz.id, it.idx, it.x, it.y - 20);
-    else if (it.type === 'orb') { g.orbs = Math.min(2, g.orbs + 1); [784, 1046, 1319].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'triangle', 0.05), i * 80)); g.pops.push({ text: '무지개 구슬 +1', x: it.x, y: it.y - 20, t: 0, c: '#9a7ed0' }); if (!g.orbTip) { g.orbTip = true; g.toast = { t: 0, text: '무지개 구슬 획득!', sub: '보스가 나오면 X 키(휴대폰은 던지기 버튼)로 던져요' }; } }
+    else if (it.type === 'orb') { g.orbs = Math.min(2, g.orbs + 1); [784, 1046, 1319].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'triangle', 0.05), i * 80)); g.pops.push({ text: '무지개 구슬 +1', x: it.x, y: it.y - 20, t: 0, c: '#9a7ed0' }); if (!g.orbTip) { g.orbTip = true; g.toast = { t: 0, text: '무지개 구슬 획득!', sub: '보스가 나오면 스페이스바(휴대폰은 던지기 버튼)로 던져요' }; } }
     else if (it.type === 'water') { g.temp -= 0.9; beep(560, 0.18, 'sine', 0.06, -200); g.pops.push({ text: '−0.9°C', x: it.x, y: it.y - 18, t: 0, c: '#3f9be0' }); }
     else if (it.type === 'warm') { g.temp += 0.9; beep(440, 0.18, 'sine', 0.06, 200); g.pops.push({ text: '+0.9°C', x: it.x, y: it.y - 18, t: 0, c: '#ef7a45' }); }
     else if (it.type === 'heart') { beep(784, 0.2, 'triangle', 0.06, 300); if (g.hearts >= MAXH) { g.bonus += 50; g.pops.push({ text: '하트 가득! +50', x: it.x, y: it.y - 18, t: 0, c: '#ff6f8f' }); } else { g.hearts++; g.pops.push({ text: '+1', x: it.x, y: it.y - 18, t: 0, c: '#ff6f8f' }); } }
@@ -2624,7 +2624,10 @@ addEventListener('keydown', e => {
   if (state === 'quiz') { if (['Space', 'Enter', 'NumpadEnter', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyS'].includes(e.code)) e.preventDefault(); return; }
   if (state === 'ending') { if (['Space', 'Enter'].includes(e.code)) e.preventDefault(); return; }
   if (!$('dexMenu').hidden || !$('lbMenu').hidden) { if (e.code === 'Escape') show(returnTo); return; }
-  if (['Space', 'ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); if (e.repeat) return; if (state === 'play') onJump(); else if (state === 'title') startGame(-1); else if (state === 'over') startGame(lastOnly); }
+  // keyboard: ↑ jump, ↓ slide, Space throws a rainbow orb (Space still starts a run from the menus)
+  if (e.code === 'Space' && state !== 'play') { e.preventDefault(); if (e.repeat) return; if (state === 'title') startGame(-1); else if (state === 'over') startGame(lastOnly); return; }
+  if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) throwOrb(); return; }
+  if (['ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); if (e.repeat) return; if (state === 'play') onJump(); else if (state === 'title') startGame(-1); else if (state === 'over') startGame(lastOnly); }
   else if (['ArrowDown', 'KeyS'].includes(e.code)) { e.preventDefault(); keys.down = true; }
   else if (e.code === 'KeyX' || e.code === 'KeyF') { e.preventDefault(); throwOrb(); }
   else if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
