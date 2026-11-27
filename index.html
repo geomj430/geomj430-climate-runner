@@ -2233,7 +2233,7 @@ async function sheetFetch(opts = {}, query = '') {
     return d;
   } finally { clearTimeout(tm); }
 }
-const SCHOOLS = ['포은고', '경주여고', '강북고', '포항고', '매전중', '기타'];
+const SCHOOLS = ['강북고', '경주여고', '매전중', '포은고', '포항고', '기타']; // 가나다 순, 기타는 맨 끝
 let lbSchool = '';
 const myNick = () => { try { return localStorage.getItem('climate-run-nick') || ''; } catch (e) { return ''; } };
 const mySchool = () => { try { const v = localStorage.getItem('climate-run-school') || ''; return SCHOOLS.includes(v) ? v : ''; } catch (e) { return ''; } };
