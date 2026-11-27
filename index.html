@@ -46,6 +46,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;border-radius:15px
 #controls #throwBtn{flex:.8;background:#efe2ff;border-color:#b9a0e8;font-size:20px}
 #controls #jumpBtn{background:var(--leaf);color:#fff;border-color:var(--leafD)}
 #controls,#controls *{touch-action:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+body.intro #controls button{visibility:hidden}
 #controls button.on{transform:translateY(3px);border-bottom-width:3px;filter:brightness(.95)}
 @media (pointer:coarse) and (orientation:landscape){
   /* phone landscape: the game fills the full screen height; buttons live in the side strips */
@@ -2531,9 +2532,9 @@ function startGame(only = -1) {
 let introT = 0, introZ = 0, introNext = 0;
 function introPick(first) { let n = Math.floor(Math.random() * ZONES.length); if (!first && n === introZ) n = (n + 1 + Math.floor(Math.random() * (ZONES.length - 1))) % ZONES.length; introZ = n; introNext = 4.2;
   if (!first) { emit(26, { x: W / 2 - 40, y: GROUND - 110, shape: 'star', c: ['#ffd75a', '#ffffff', '#ff8fb1', '#9fe0a0'], g: 0, sp: 200, max: 0.6, s: 4.5 }); beep(880, 0.12, 'triangle', 0.04, 300); } }
-function startIntro() { newGame(); G.banner.t = 99; state = 'intro'; introT = 0; introPick(true); show(null); }
+function startIntro() { document.body.classList.add('intro'); newGame(); G.banner.t = 99; state = 'intro'; introT = 0; introPick(true); show(null); }
 function introTick(dt) { introT += dt; introNext -= dt; if (introNext <= 0) introPick(false); }
-function endIntro() { if (state !== 'intro') return; initAudio(); PART.length = 0; toTitle(); beep(660, 0.1, 'triangle', 0.05, 200); }
+function endIntro() { if (state !== 'intro') return; document.body.classList.remove('intro'); initAudio(); PART.length = 0; toTitle(); beep(660, 0.1, 'triangle', 0.05, 200); }
 function drawIntro() {
   const z = ZONES[introZ], id = z.id; BG[id](0.25); propLayer(id, 0.25);
   ctx.fillStyle = 'rgba(255,248,231,.28)'; ctx.fillRect(0, 0, W, H);
@@ -2544,11 +2545,9 @@ function drawIntro() {
   ctx.fillStyle = 'rgba(91,70,54,.22)'; ep(kx + 3, GROUND + 4, 46, 10); ctx.fill();
   ctx.save(); ctx.translate(kx, GROUND + bob); ctx.scale(sc, sc); drawKid(OUTFIT[id], 0, t * 9); ctx.restore();
   const bx = kx + 92, by = GROUND - 238;
-  ctx.save(); ctx.globalAlpha *= pop; rr(bx, by, 250, 74, 22); shape('#fff8e7', 3);
-  poly([[bx + 26, by + 70], [bx + 12, by + 96], [bx + 52, by + 72]]); fill('#fff8e7'); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(bx + 26, by + 74); ctx.lineTo(bx + 12, by + 96); ctx.lineTo(bx + 52, by + 74); ctx.stroke();
-  ctx.textAlign = 'left'; ctx.fillStyle = INK; ctx.font = F(22); ctx.fillText('안녕! 같이 달려 볼래?', bx + 20, by + 34);
-  rr(bx + 20, by + 44, 40, 20, 8); shape(z.kc, 2); ctx.fillStyle = z.kt; ctx.font = F(13); ctx.textAlign = 'center'; ctx.fillText(z.code, bx + 40, by + 59);
-  ctx.textAlign = 'left'; ctx.fillStyle = '#8a7563'; ctx.font = F(15); ctx.fillText(`${z.name} 기후 탐험복`, bx + 68, by + 59); ctx.restore();
+  ctx.save(); ctx.globalAlpha *= pop; rr(bx, by + 18, 250, 54, 22); shape('#fff8e7', 3);
+  poly([[bx + 26, by + 68], [bx + 12, by + 96], [bx + 52, by + 70]]); fill('#fff8e7'); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(bx + 26, by + 72); ctx.lineTo(bx + 12, by + 96); ctx.lineTo(bx + 52, by + 72); ctx.stroke();
+  ctx.textAlign = 'left'; ctx.fillStyle = INK; ctx.font = F(22); ctx.fillText('안녕! 같이 달려 볼래?', bx + 22, by + 53); ctx.restore();
   drawParts();
   if (introT > 0.8) { const by2 = H - 60 - Math.abs(Math.sin(t * 3)) * 4; ctx.save(); rr(W / 2 - 150, by2, 300, 42, 21); shape('#fff8e7', 3, '#ead9b8');
     ctx.globalAlpha = 0.65 + 0.35 * Math.sin(t * 4); ctx.fillStyle = INK; ctx.font = F(19); ctx.textAlign = 'center'; ctx.fillText('화면을 누르면 시작해요', W / 2, by2 + 28); ctx.restore(); ctx.textAlign = 'left'; }
