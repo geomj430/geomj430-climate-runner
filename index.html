@@ -404,7 +404,7 @@ const ZONES = [
     outfit: { shirt: '#d9c48e', hat: 'safari', hatC: '#f3e6bf' } },
   { id: 'bw', code: 'BW', kc: '#FF0000', kt: '#ffffff', name: '사막', place: '사하라 사막 · 알제리', stats: '한낮 45°C · 새벽 5°C · 연강수량 250mm 미만',
     fact: '구름과 수증기가 거의 없어 밤이 되면 열이 빠르게 빠져나가요. 일교차가 30°C를 넘을 때도 있어요.',
-    event: '모래폭풍', eventSub: '시야가 좁아져요', pool: ['rock', 'mushroom', 'scorpion', 'devil', 'scorpion', 'mushroom'],
+    event: '모래폭풍', eventSub: '시야가 좁아져요', pool: ['rock', 'oasis', 'scorpion', 'devil', 'scorpion', 'oasis'],
     drift: (p, ev) => p > 0.55 ? -0.12 : (ev ? 0.16 : 0.13), amb: p => p > 0.55 ? 5 : 45,
     outfit: { shirt: '#fbf5e8', hat: 'wrap', hatC: '#fbf5e8' } },
   { id: 'bs', code: 'BS', kc: '#F5A500', kt: '#3a2600', name: '스텝', place: '몽골 고원 · 몽골', stats: '연강수량 250~500mm · 연교차 40°C 이상',
@@ -1323,6 +1323,17 @@ const OBS = {
     paint(E(cx + 2, top + 14, 16, 9.5), '#ffffff', '#dfe6ee', 3, 3); blob([[cx - 10, top + 16, 5]], '#ffffff', 0);
     paint(PL([[cx - 21, top + 3], [cx - 19, top - 8], [cx - 13, top + 1]]), '#ffffff', null, 2.5); ctx.fillStyle = '#ffc0cc'; poly([[cx - 19, top + 1], [cx - 18.5, top - 4], [cx - 15, top + 1]]); ctx.fill();
     paint(C(cx - 15, top + 9, 9.5), '#ffffff', '#dfe6ee', 3, 2); paint(E(cx - 24, top + 12, 5, 3.5), '#ffffff', '#e8edf2', 2, 1); ctx.fillStyle = INK; cp(cx - 28, top + 11, 1.9); ctx.fill(); eye(cx - 17, top + 7, 1.9); blush(cx - 13, top + 13, 2.2); } },
+  // desert pit: an oasis pool to jump across (reeds, sandy banks, a date-palm frond)
+  oasis: { name: '오아시스 웅덩이', pit: true, make: () => ({ w: 96 + Math.random() * 30 }), draw(o) {
+    const pool = R(o.x, GROUND - 2, o.w, H - GROUND + 20, 16), g = ctx.createLinearGradient(0, GROUND, 0, H); g.addColorStop(0, '#7fd8d2'); g.addColorStop(0.45, '#3fa6b6'); g.addColorStop(1, '#1f5f7a');
+    pool(); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
+    clipDo(pool, () => { for (let k = 0; k < 3; k++) { const r = (t * 0.5 + k / 3) % 1; ctx.strokeStyle = `rgba(255,255,255,${0.6 * (1 - r)})`; ctx.lineWidth = 1.5; ep(o.x + o.w / 2, GROUND + 24, 10 + r * o.w * 0.4, 3 + r * 6); ctx.stroke(); }
+      ctx.fillStyle = 'rgba(255,255,255,.6)'; rr(o.x + 14, GROUND + 12, 28, 4, 2); ctx.fill(); rr(o.x + o.w - 40, GROUND + 30, 18, 3, 1.5); ctx.fill();
+      paint(E(o.x + o.w * 0.62, GROUND + 18, 9, 3.6), '#6fb35c', '#4f9150', 1.6, 1); ctx.fillStyle = '#ff9fc0'; cp(o.x + o.w * 0.62 + 3, GROUND + 16, 2.6); ctx.fill(); });
+    for (const side of [o.x, o.x + o.w]) { const d = side === o.x ? 1 : -1; blob([[side, GROUND + 2, 10], [side + d * 9, GROUND, 7]], '#f0d4a0', 3);
+      ctx.strokeStyle = '#6a9e3c'; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; for (let k = 0; k < 4; k++) { const rx = side + d * (2 + k * 3), sw = Math.sin(t * 2 + k + side) * 2; ctx.beginPath(); ctx.moveTo(rx, GROUND - 2); ctx.quadraticCurveTo(rx + d * 2 + sw, GROUND - 14, rx + d * 4 + sw, GROUND - 22 - (k % 2) * 6); ctx.stroke(); }
+      paint(E(side + d * 6, GROUND - 22, 2.2, 5), '#8a5a34', null, 1.4); }
+    leaf(o.x - 10, GROUND - 6, 30, -0.5 + Math.sin(t * 1.5) * 0.05, '#7cbf5a', '#5e9e44', 2); } },
   hole: { name: '얼음 구멍', pit: true, make: () => ({ w: 96 + Math.random() * 30 }), draw(o) {
     const g = ctx.createLinearGradient(0, GROUND, 0, H); g.addColorStop(0, '#7fb4e0'); g.addColorStop(1, '#264a7a'); rr(o.x, GROUND - 2, o.w, H - GROUND + 20, 14); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
     clipDo(R(o.x, GROUND - 2, o.w, H - GROUND + 20, 14), () => { for (let k = 0; k < 3; k++) { const r = (t * 0.6 + k / 3) % 1; ctx.strokeStyle = `rgba(255,255,255,${0.6 * (1 - r)})`; ctx.lineWidth = 1.5; ep(o.x + o.w / 2, GROUND + 26, 10 + r * o.w * 0.4, 3 + r * 6); ctx.stroke(); } ctx.fillStyle = 'rgba(255,255,255,.55)'; rr(o.x + 14, GROUND + 14, 30, 4, 2); ctx.fill(); rr(o.x + 40, GROUND + 48, 22, 4, 2); ctx.fill(); });
@@ -1551,10 +1562,10 @@ function physics(dt, attract) {
   p.slide = keys.down && p.onGround && !attract && !G.fest;
   const prevY = p.y; p.prevY = prevY; p.vy += GRAV * dt * (keys.down && !p.onGround ? 1.8 : 1); p.y += p.vy * dt;
   const cx = p.x + 18;
-  const overPit = !attract && p.inv <= 0 && G.obs.some(o => o.pit && cx > o.x + 8 && cx < o.x + o.w - 8);
+  const pitUnder = !attract && p.inv <= 0 ? G.obs.find(o => o.pit && cx > o.x + 8 && cx < o.x + o.w - 8) : null, overPit = !!pitUnder; if (pitUnder) p.pitName = pitUnder.name;
   if (p.y >= GROUND && prevY <= GROUND + 0.5 && !overPit) { if (!p.onGround && !attract && p.vy > 350) fxLand(); p.y = GROUND; p.vy = 0; p.onGround = true; p.jumps = 0; }
   else p.onGround = false;
-  if (p.y > H + 60) { Object.assign(p, { y: GROUND, vy: 0, onGround: true, jumps: 0 }); hurt('얼음 구멍에 빠졌어요', true); }
+  if (p.y > H + 60) { Object.assign(p, { y: GROUND, vy: 0, onGround: true, jumps: 0 }); hurt(`${p.pitName || '구멍'}에 빠졌어요`, true); }
   p.inv = Math.max(0, p.inv - dt);
 }
 
