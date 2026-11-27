@@ -1608,7 +1608,7 @@ function bossContact(pb) {
   const bb = bossBox(B);
   if (!hitBox(pb, bb)) return;
   if (p.vy > 0 && p.prevY <= bb.y + 16 && B.inv <= 0) { p.vy = -JV * 0.95; p.jumps = 1; p.onGround = false; bossDamage(B, B.x + B.w / 2, bb.y, 200); }
-  else if (!(B.inv > 0 && p.vy < 0)) hurt(`${B.s.name}에게 부딪혔어요`);
+  else if (!(B.inv > 0 && p.vy < 0)) hurt('');
 }
 /* ---------- rainbow orbs: pick up to 2, throw only at a boss ---------- */
 let orbMsgT = 0;
@@ -1769,7 +1769,7 @@ function update(dt, attract) {
       o.dead = true; o.deadT = 0; o.dvy = -380; g.stomps++; fxStomp(o.x + o.w / 2, o.y + 6); p.vy = -JV * 0.78; p.jumps = 1; p.onGround = false;
       addScore(o.key === 'herd' ? 150 : 50, o.x + o.w / 2, o.y - 10, true, '#e8573a'); beep(880, 0.1, 'square', 0.045, 420); break;
     }
-    if (p.inv <= 0) { o.touched = true; hurt(`${o.name}에 부딪혔어요`); break; }
+    if (p.inv <= 0) { o.touched = true; hurt(''); break; }
   }
   if (state !== 'play') return;
   for (const o of g.obs) if (!o.passed && !o.dead && !o.pit && o.x + o.w < p.x) { o.passed = true; if (!o.touched) { g.bonus += 10; g.pops.push({ text: '+10', x: p.x + 4, y: p.y - 70, t: 0.35, c: '#a08c78' }); } }
@@ -2810,7 +2810,7 @@ function gameOver() {
   state = 'over'; const s = score(), only = G.only ?? -1; let b = readBest(only);
   if (s > b) { b = s; if (only < 0) best = s; try { localStorage.setItem(bestKey(only), String(s)); } catch (e) {} }
   $('overMode').textContent = only < 0 ? '탐험 종료 · 전체 기후 일주' : `탐험 종료 · ${ZONES[only].name} 기후만`;
-  $('overCause').textContent = G.cause; $('oScore').textContent = s.toLocaleString(); $('oDist').textContent = `${Math.floor(G.dist / 10).toLocaleString()} m`; $('oBest').textContent = b.toLocaleString();
+  $('overCause').textContent = G.cause || '아쉬워요! 다시 달려 볼까요?'; $('oScore').textContent = s.toLocaleString(); $('oDist').textContent = `${Math.floor(G.dist / 10).toLocaleString()} m`; $('oBest').textContent = b.toLocaleString();
   $('oStats').textContent = (G.conts ? `이어하기 ${G.conts}번 · ` : '') + `최대 콤보 ${G.bestCombo} · 퀴즈 정답 ${G.quizRight}/${G.quizTotal} · 밟아서 퇴치 ${G.stomps} · 보스 ${G.bossKills}` + (G.newCards.length ? ` · 새 도감 카드 ${G.newCards.length}장` : '');
   $('oZones').innerHTML = G.visited.map(i => { const z = ZONES[i]; return `<li><span class="code" style="--c:${z.kc};--t:${z.kt}">${z.code}</span>${z.name}</li>`; }).join('') + (G.loop ? `<li>${G.loop + 1}${only < 0 ? '회차' : '바퀴째'}까지 달렸어요</li>` : '');
   show('overMenu'); beep(330, 0.5, 'triangle', 0.06, -160);
