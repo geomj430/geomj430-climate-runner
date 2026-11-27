@@ -1742,7 +1742,7 @@ function update(dt, attract) {
   physics(dt, false); if (state !== 'play') return;
   fxFeet(dt);
 
-  if (!g.boss && !g.fest && !g.bossPending) {
+  if (!g.boss && !g.fest && !g.bossPending && g.banner.t > CARD_T && !g.quiz) {
     const d0 = zz.drift(zp, ev) * 1.15 * (1 + 0.15 * g.loop); g.temp += d0 * dt;
     if (g.temp >= 39.5) { g.temp = 37.6; hurt('체온이 39.5°C까지 올라 열사병 직전이었어요', true); }
     else if (g.temp <= 35) { g.temp = 36.4; hurt('체온이 35°C 아래로 떨어져 저체온증이 왔어요', true); }
@@ -1781,12 +1781,14 @@ function update(dt, attract) {
         else if (g.preHeart === 'due') { g.items.push({ type: 'heart', pre: true, x: xi, y: GROUND - 34, ph: 0 }); g.preHeart = 'placed'; g.toast = { t: 0, text: '하트를 챙겨요!', sub: '곧 블리자드가 몰아쳐요' }; }
         else if (g.orbDue > 0) { g.items.push({ type: 'orb', x: xi, y: GROUND - 40 - Math.random() * 70, ph: 0 }); g.orbDue--; }
         else if (wantItem) {
-          g.itemTimer = (3.4 + Math.random() * 2.4) * (zz.id === 'et' ? 0.6 : 1);
+          // cold climates hand out warm tea more often (and a bit more when the runner is already chilly)
+          g.itemTimer = (3.4 + Math.random() * 2.4) * ({ df: 0.4, et: 0.3 }[zz.id] ?? 1) * (d < 0 && g.temp < 36.3 ? 0.75 : 1);
           let type = Math.abs(d) < 0.05 ? (g.temp > 37 ? 'water' : 'warm') : (d < 0 ? 'warm' : 'water');
           if (g.hearts < MAXH && !g.heartGiven && zp > 0.45) { type = 'heart'; g.heartGiven = true; }
           g.items.push({ type, x: xi, y: Math.random() < 0.5 ? GROUND - 34 : GROUND - 120, ph: Math.random() * 6 });
         } else {
-          const high = Math.random() < 0.4; for (let k = 0; k < 3; k++) g.items.push({ type: 'gem', x: xi - 36 + k * 36, y: (high ? GROUND - 122 : GROUND - 30) - (k === 1 ? 14 : 0), ph: k });
+          if ((zz.id === 'df' || zz.id === 'et') && d < 0 && g.temp < 37.6 && Math.random() < 0.6) g.items.push({ type: 'warm', x: xi, y: Math.random() < 0.5 ? GROUND - 34 : GROUND - 120, ph: Math.random() * 6 });
+          else { const high = Math.random() < 0.4; for (let k = 0; k < 3; k++) g.items.push({ type: 'gem', x: xi - 36 + k * 36, y: (high ? GROUND - 122 : GROUND - 30) - (k === 1 ? 14 : 0), ph: k }); }
         }
       }
     }
