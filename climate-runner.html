@@ -1156,16 +1156,21 @@ const OBS = {
     for (let k = 0; k < 5; k++) leaf(o.x + 4 + k * 10, by + 6, 12, 1.2 + k * 0.2, '#5fbf6a', '#3f9a52', 1.8);
     for (let k = 0; k < 5; k++) { const a = k * TAU / 5 + t * 0.3; paint(E(o.x + 23 + Math.cos(a) * 6, by - 4 + Math.sin(a) * 6, 6, 4, a), '#ff7fa8', '#f0608c', 2, 1.5); } ctx.fillStyle = '#ffe27a'; cp(o.x + 23, by - 4, 3); ctx.fill(); } },
   // desert slide: the wide cap of a wind-carved mushroom rock (its stem stands a little further back)
-  mushroom: { name: '버섯바위', make: () => ({ w: 112, h: 54, y: GROUND - 40 - 54 }), draw(o) {
-    const cx = o.x + o.w / 2, bot = o.y + o.h, sx = cx + 16;
-    ctx.save(); ctx.globalAlpha *= 0.55; paint(() => { ctx.beginPath(); ctx.moveTo(sx - 9, bot - 4); ctx.quadraticCurveTo(sx - 5, bot + 20, sx - 14, GROUND - 6); ctx.lineTo(sx + 16, GROUND - 6); ctx.quadraticCurveTo(sx + 7, bot + 20, sx + 11, bot - 4); ctx.closePath(); }, '#d9a47a', '#c48c62', 2.5, 3); ctx.restore();
-    ctx.fillStyle = 'rgba(91,70,54,.14)'; ep(cx, GROUND + 3, o.w * 0.42, 5); ctx.fill();
-    const cap = () => { ctx.beginPath(); ctx.moveTo(o.x, bot - 6); ctx.quadraticCurveTo(o.x - 2, o.y + 6, cx - 10, o.y); ctx.quadraticCurveTo(cx + 30, o.y - 4, o.x + o.w - 4, o.y + 14); ctx.quadraticCurveTo(o.x + o.w + 4, bot - 10, o.x + o.w - 6, bot - 2);
-      ctx.quadraticCurveTo(cx, bot + 4, o.x + 8, bot); ctx.quadraticCurveTo(o.x, bot, o.x, bot - 6); ctx.closePath(); };
-    paint(cap, '#eab088', '#d0956c', 3, 5);
-    clipDo(cap, () => { ctx.strokeStyle = 'rgba(190,110,70,.45)'; ctx.lineWidth = 3; for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(o.x - 4, o.y + 16 + k * 11); ctx.quadraticCurveTo(cx, o.y + 10 + k * 11, o.x + o.w + 4, o.y + 22 + k * 11); ctx.stroke(); }
-      ctx.fillStyle = 'rgba(150,80,50,.35)'; ep(cx, bot + 2, o.w * 0.5, 8); ctx.fill(); shine(cx - 22, o.y + 8, 18, 3.5, 0.35, -0.1); });
-    ctx.fillStyle = 'rgba(214,180,130,.7)'; for (let k = 0; k < 4; k++) { const p2 = (t * 0.6 + k / 4) % 1; cp(o.x + o.w * (0.2 + k * 0.2) - p2 * 10, bot + 4 + p2 * 26, 1.6 * (1 - p2) + 0.4); ctx.fill(); } } },
+  mushroom: { name: '버섯바위', make: () => ({ w: 96, h: 235, y: GROUND - 40 - 235 }), draw(o) { // too tall to jump over (double jump tops out near 257 px)
+    const cx = o.x + o.w / 2, bot = o.y + o.h, top = o.y, capH = 74, cw = 76, sx = cx + 6;
+    // thin eroded foot further back, then the thick neck and a wide dome cap
+    ctx.save(); ctx.globalAlpha *= 0.55; paint(() => { ctx.beginPath(); ctx.moveTo(sx - 9, bot - 4); ctx.quadraticCurveTo(sx - 4, bot + 20, sx - 15, GROUND - 6); ctx.lineTo(sx + 17, GROUND - 6); ctx.quadraticCurveTo(sx + 6, bot + 20, sx + 11, bot - 4); ctx.closePath(); }, '#d9a47a', '#c48c62', 2.5, 3); ctx.restore();
+    ctx.fillStyle = 'rgba(91,70,54,.14)'; ep(cx, GROUND + 3, o.w * 0.5, 5); ctx.fill();
+    const neck = () => { ctx.beginPath(); ctx.moveTo(o.x + 6, top + capH - 6); ctx.quadraticCurveTo(o.x - 2, top + capH + 70, o.x + 4, bot - 10); ctx.quadraticCurveTo(o.x + 6, bot + 2, o.x + 16, bot); ctx.quadraticCurveTo(cx, bot + 7, o.x + o.w - 14, bot);
+      ctx.quadraticCurveTo(o.x + o.w - 4, bot + 2, o.x + o.w - 3, bot - 10); ctx.quadraticCurveTo(o.x + o.w + 3, top + capH + 70, o.x + o.w - 6, top + capH - 6); ctx.closePath(); };
+    paint(neck, '#e2a47c', '#c98a62', 3, 5);
+    clipDo(neck, () => { for (let k = 0; k < 6; k++) { const yy = top + capH + 12 + k * 24; ctx.strokeStyle = k % 2 ? 'rgba(190,110,70,.4)' : 'rgba(255,230,200,.3)'; ctx.lineWidth = k % 2 ? 4 : 2.5; ctx.beginPath(); ctx.moveTo(o.x - 6, yy); ctx.quadraticCurveTo(cx, yy - 6, o.x + o.w + 6, yy + 3); ctx.stroke(); }
+      ctx.fillStyle = 'rgba(150,80,50,.4)'; ep(cx, bot + 2, o.w * 0.55, 12); ctx.fill(); });
+    const cap = () => { ctx.beginPath(); ctx.moveTo(cx - cw, top + capH); ctx.quadraticCurveTo(cx - cw - 6, top + 14, cx - 10, top); ctx.quadraticCurveTo(cx + cw + 6, top + 4, cx + cw, top + capH - 4); ctx.quadraticCurveTo(cx, top + capH + 12, cx - cw, top + capH); ctx.closePath(); };
+    paint(cap, '#eeb890', '#d39a70', 3, 6);
+    clipDo(cap, () => { for (let k = 0; k < 3; k++) { ctx.strokeStyle = 'rgba(190,110,70,.42)'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(cx - cw - 6, top + 24 + k * 16); ctx.quadraticCurveTo(cx, top + 16 + k * 16, cx + cw + 6, top + 30 + k * 16); ctx.stroke(); }
+      ctx.fillStyle = 'rgba(150,80,50,.35)'; ep(cx, top + capH + 4, cw, 10); ctx.fill(); shine(cx - 30, top + 12, 24, 5, 0.38, -0.12); });
+    ctx.fillStyle = 'rgba(214,180,130,.7)'; for (let k = 0; k < 4; k++) { const p2 = (t * 0.6 + k / 4) % 1; cp(o.x + o.w * (0.15 + k * 0.23) - p2 * 10, bot + 4 + p2 * 26, 1.6 * (1 - p2) + 0.4); ctx.fill(); } } },
   // Mediterranean slide: a grape pergola with vines and heavy bunches hanging low
   pergola: { name: '포도 시렁', make: () => ({ w: 66, y: 0, h: GROUND - 40 }), draw(o) {
     const by = o.h - 6;
