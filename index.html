@@ -1600,13 +1600,21 @@ function advPlan(B, k) {
 }
 function bnext(B, st) {
   B.st = st; B.t = 0; const k = B.maxHp - B.hp;
-  if (st === 'throw') { B.n = 2 + Math.floor(Math.random() * (2 + Math.min(1, k))); B.cool = 0.5; }
+  if (st === 'throw') { let i; do { i = Math.floor(Math.random() * THROWS.length); } while (i === B.lastPat && THROWS.length > 1); B.lastPat = i;
+    B.shots = THROWS[i].map(([kind, v, gap]) => ({ kind, v, gap: Math.max(0.34, gap * (1 - 0.05 * k)) })); B.n = B.shots.length; B.cool = 0.5; }
   if (st === 'adv') B.plan = advPlan(B, k);
   if (st === 'idle') B.idleT = Math.max(0.2, 0.3 + Math.random() * 0.7 - k * 0.07);
 }
-function bossShot(B, k) {
-  const high = Math.random() < 0.45;
-  G.shots.push({ kind: high ? 'high' : 'low', type: B.s.shot, x: B.x + 6, y: high ? GROUND - 64 : GROUND - 15, r: high ? 13 : 15, vx: -(390 + k * 45 + G.loop * 25), spin: 0 });
+/* Throw patterns, at most 3 shots each: [height, speed factor, pause after]. 'low' must be jumped, 'high' ducked or run under. */
+const THROWS = [
+  [['low', 1, 0.5]], [['high', 1, 0.5]],
+  [['low', 1, 0.45], ['high', 1, 0.5]], [['high', 1, 0.45], ['low', 1, 0.5]],
+  [['low', 1, 0.38], ['low', 1, 0.38], ['low', 1, 0.5]], [['low', 1, 0.5], ['high', 1, 0.5], ['low', 1, 0.5]],
+  [['high', 1, 0.42], ['high', 1, 0.42], ['low', 1, 0.5]], [['low', 0.8, 0.9], ['low', 1.15, 0.5]], [['high', 0.85, 0.55], ['low', 1.1, 0.5]],
+];
+function bossShot(B, k, kind, v = 1) {
+  const high = kind ? kind === 'high' : Math.random() < 0.45;
+  G.shots.push({ kind: high ? 'high' : 'low', type: B.s.shot, x: B.x + 6, y: high ? GROUND - 64 : GROUND - 15, r: high ? 13 : 15, vx: -(390 + k * 45 + G.loop * 25) * v, spin: 0 });
   beep(high ? 620 : 300, 0.12, 'square', 0.035, -100);
 }
 function bossTel(B) { const sg = B.st === 'adv' && B.plan[0]; return !!sg && sg.t === 'tel'; }
@@ -1616,7 +1624,7 @@ function updateBoss(dt) {
   switch (B.st) {
     case 'enter': if (B.t > 0.9) bnext(B, 'idle'); break;
     case 'idle': if (B.t > B.idleT) { const thr = Math.random() < (B.lastThrow ? 0.2 : 0.4); B.lastThrow = thr; bnext(B, thr ? 'throw' : 'adv'); } break;
-    case 'throw': B.cool -= dt; if (B.cool <= 0 && B.n > 0) { bossShot(B, k); B.n--; B.cool = Math.max(0.34, 0.4 + Math.random() * 0.3 - k * 0.05); } else if (B.n === 0 && B.cool <= 0) bnext(B, 'idle'); break;
+    case 'throw': B.cool -= dt; if (B.cool <= 0 && B.shots && B.shots.length) { const sh = B.shots.shift(); bossShot(B, k, sh.kind, sh.v); B.n = B.shots.length; B.cool = sh.gap; } else if (!(B.shots && B.shots.length) && B.cool <= 0) bnext(B, 'idle'); break;
     case 'adv': {
       const sg = B.plan[0]; if (!sg) { B.face = -1; bnext(B, 'idle'); break; }
       sg.e = (sg.e || 0) + dt; let done = false;
@@ -1639,9 +1647,10 @@ function bossDamage(B, x, y, pts) {
 function bossBox(B) { const bot = GROUND + B.yo; return { x: B.x + 14, y: bot - B.h + 12, w: B.w - 28, h: B.h - 16 }; }
 function bossContact(pb) {
   const B = G.boss, p = player; if (!B || B.dead) return;
-  const bb = bossBox(B);
-  if (!hitBox(pb, bb)) return;
-  if (p.vy > 0 && p.prevY <= bb.y + 16 && B.inv <= 0) { p.vy = -JV * 0.95; p.jumps = 1; p.onGround = false; bossDamage(B, B.x + B.w / 2, bb.y, 200); }
+  const bb = bossBox(B), sb = { x: bb.x - 6, y: bb.y - 4, w: bb.w + 12, h: bb.h + 4 }; // stomp box is a little wider than the body
+  const stomp = p.vy > 0 && p.prevY <= bb.y + 22 && B.inv <= 0 && hitBox(pb, sb);
+  if (!stomp && !hitBox(pb, bb)) return;
+  if (stomp) { p.vy = -JV * 0.95; p.jumps = 1; p.onGround = false; bossDamage(B, B.x + B.w / 2, bb.y, 200); }
   else if (!(B.inv > 0 && p.vy < 0)) hurt('');
 }
 /* ---------- rainbow orbs: pick up to 2, throw only at a boss ---------- */
