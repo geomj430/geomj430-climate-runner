@@ -2783,7 +2783,7 @@ function frame(ts) {
   if (state === 'play' || state === 'title') {
     if (hitStop > 0) hitStop -= dt;
     else { const sc = slowT > 0 ? 0.35 : 1; slowT = Math.max(0, slowT - dt); t += dt * sc; update(dt * sc, state === 'title'); }
-    if (state === 'play') updParts(dt);
+    updParts(dt); // also on the title screen, so leftover effects fade out instead of freezing
   } else if (state === 'quiz') { updParts(dt); quizTick(dt); G.flash = Math.max(0, G.flash - dt); }
   else if (state === 'ending') { t += dt; updParts(dt); endingTick(dt); }
   else if (state === 'intro') { t += dt; scroll += dt * 36; updParts(dt); introTick(dt); }
@@ -2822,7 +2822,7 @@ function drawIntro() {
   if (introT > 0.8) { const by2 = H - 60 - Math.abs(Math.sin(t * 3)) * 4; ctx.save(); rr(W / 2 - 150, by2, 300, 42, 21); shape('#fff8e7', 3, '#ead9b8');
     ctx.globalAlpha = 0.65 + 0.35 * Math.sin(t * 4); ctx.fillStyle = INK; ctx.font = F(19); ctx.textAlign = 'center'; ctx.fillText('화면을 누르면 시작해요', W / 2, by2 + 28); ctx.restore(); ctx.textAlign = 'left'; }
 }
-function toTitle() { newGame(); G.banner.t = 99; state = 'title'; $('bestTitle').textContent = best.toLocaleString(); show('menu'); }
+function toTitle() { PART.length = 0; hitStop = 0; slowT = 0; newGame(); G.banner.t = 99; state = 'title'; $('bestTitle').textContent = best.toLocaleString(); show('menu'); }
 function togglePause() {
   if (state === 'play') { state = 'paused'; const z = ZONES[G.zi]; $('pauseZone').textContent = `${z.code} · ${z.name} 기후`; $('pauseFact').textContent = `${z.place}. ${z.stats}. ${z.fact}`; show('pauseMenu'); $('pauseBtn').textContent = '계속'; }
   else if (state === 'paused') { state = 'play'; show(null); $('pauseBtn').textContent = '일시정지'; }
