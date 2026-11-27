@@ -404,7 +404,7 @@ const ZONES = [
     outfit: { shirt: '#d9c48e', hat: 'safari', hatC: '#f3e6bf' } },
   { id: 'bw', code: 'BW', kc: '#FF0000', kt: '#ffffff', name: '사막', place: '사하라 사막 · 알제리', stats: '한낮 45°C · 새벽 5°C · 연강수량 250mm 미만',
     fact: '구름과 수증기가 거의 없어 밤이 되면 열이 빠르게 빠져나가요. 일교차가 30°C를 넘을 때도 있어요.',
-    event: '모래폭풍', eventSub: '시야가 좁아져요', pool: ['rock', 'rock', 'scorpion', 'devil', 'scorpion', 'devil'],
+    event: '모래폭풍', eventSub: '시야가 좁아져요', pool: ['rock', 'mushroom', 'scorpion', 'devil', 'scorpion', 'mushroom'],
     drift: (p, ev) => p > 0.55 ? -0.12 : (ev ? 0.16 : 0.13), amb: p => p > 0.55 ? 5 : 45,
     outfit: { shirt: '#fbf5e8', hat: 'wrap', hatC: '#fbf5e8' } },
   { id: 'bs', code: 'BS', kc: '#F5A500', kt: '#3a2600', name: '스텝', place: '몽골 고원 · 몽골', stats: '연강수량 250~500mm · 연교차 40°C 이상',
@@ -414,7 +414,7 @@ const ZONES = [
     outfit: { shirt: '#7cc4c9', hat: 'cap', hatC: '#e86f5c' } },
   { id: 'cs', code: 'Cs', kc: '#FFFF00', kt: '#3a3a00', name: '지중해성', place: '로마 · 이탈리아', stats: '연평균 16°C · 연강수량 약 800mm',
     fact: '여름은 뜨겁고 건조하며 비는 주로 겨울에 내려요. 건조한 여름을 잘 견디는 올리브, 포도, 코르크참나무를 많이 길러요.',
-    event: '산불', eventSub: '덥고 건조한 여름엔 불이 번지기 쉬워요', pool: ['wall', 'amphora', 'barrel', 'gull', 'barrel', 'wall'],
+    event: '산불', eventSub: '덥고 건조한 여름엔 불이 번지기 쉬워요', pool: ['wall', 'pergola', 'barrel', 'gull', 'barrel', 'amphora'],
     drift: (p, ev) => ev ? 0.13 : 0.07, amb: (p, ev) => ev ? 40 : 33,
     outfit: { shirt: '#9cd3f2', hat: 'straw', hatC: '#f2d27a' } },
   { id: 'cfb', code: 'Cfb', kc: '#64FF50', kt: '#0d3a06', name: '서안해양성', place: '런던 · 영국', stats: '연평균 11°C · 연강수량 약 600mm',
@@ -1154,6 +1154,28 @@ const OBS = {
     const by = o.h - 4; blob([[o.x + 8, by - 2, 12], [o.x + 23, by + 2, 15], [o.x + 38, by - 2, 12]], '#4fa860', 3);
     for (let k = 0; k < 5; k++) leaf(o.x + 4 + k * 10, by + 6, 12, 1.2 + k * 0.2, '#5fbf6a', '#3f9a52', 1.8);
     for (let k = 0; k < 5; k++) { const a = k * TAU / 5 + t * 0.3; paint(E(o.x + 23 + Math.cos(a) * 6, by - 4 + Math.sin(a) * 6, 6, 4, a), '#ff7fa8', '#f0608c', 2, 1.5); } ctx.fillStyle = '#ffe27a'; cp(o.x + 23, by - 4, 3); ctx.fill(); } },
+  // desert slide: the wide cap of a wind-carved mushroom rock (its stem stands a little further back)
+  mushroom: { name: '버섯바위', make: () => ({ w: 112, h: 54, y: GROUND - 40 - 54 }), draw(o) {
+    const cx = o.x + o.w / 2, bot = o.y + o.h, sx = cx + 16;
+    ctx.save(); ctx.globalAlpha *= 0.55; paint(() => { ctx.beginPath(); ctx.moveTo(sx - 9, bot - 4); ctx.quadraticCurveTo(sx - 5, bot + 20, sx - 14, GROUND - 6); ctx.lineTo(sx + 16, GROUND - 6); ctx.quadraticCurveTo(sx + 7, bot + 20, sx + 11, bot - 4); ctx.closePath(); }, '#d9a47a', '#c48c62', 2.5, 3); ctx.restore();
+    ctx.fillStyle = 'rgba(91,70,54,.14)'; ep(cx, GROUND + 3, o.w * 0.42, 5); ctx.fill();
+    const cap = () => { ctx.beginPath(); ctx.moveTo(o.x, bot - 6); ctx.quadraticCurveTo(o.x - 2, o.y + 6, cx - 10, o.y); ctx.quadraticCurveTo(cx + 30, o.y - 4, o.x + o.w - 4, o.y + 14); ctx.quadraticCurveTo(o.x + o.w + 4, bot - 10, o.x + o.w - 6, bot - 2);
+      ctx.quadraticCurveTo(cx, bot + 4, o.x + 8, bot); ctx.quadraticCurveTo(o.x, bot, o.x, bot - 6); ctx.closePath(); };
+    paint(cap, '#eab088', '#d0956c', 3, 5);
+    clipDo(cap, () => { ctx.strokeStyle = 'rgba(190,110,70,.45)'; ctx.lineWidth = 3; for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(o.x - 4, o.y + 16 + k * 11); ctx.quadraticCurveTo(cx, o.y + 10 + k * 11, o.x + o.w + 4, o.y + 22 + k * 11); ctx.stroke(); }
+      ctx.fillStyle = 'rgba(150,80,50,.35)'; ep(cx, bot + 2, o.w * 0.5, 8); ctx.fill(); shine(cx - 22, o.y + 8, 18, 3.5, 0.35, -0.1); });
+    ctx.fillStyle = 'rgba(214,180,130,.7)'; for (let k = 0; k < 4; k++) { const p2 = (t * 0.6 + k / 4) % 1; cp(o.x + o.w * (0.2 + k * 0.2) - p2 * 10, bot + 4 + p2 * 26, 1.6 * (1 - p2) + 0.4); ctx.fill(); } } },
+  // Mediterranean slide: a grape pergola with vines and heavy bunches hanging low
+  pergola: { name: '포도 시렁', make: () => ({ w: 66, y: 0, h: GROUND - 40 }), draw(o) {
+    const by = o.h - 6;
+    for (const vx of [o.x + 10, o.x + o.w - 10]) { const pts = []; for (let y = 0; y <= by - 18; y += 18) pts.push([vx + Math.sin(y * 0.05 + vx + t * 1.6) * 3, y]); limb(pts, 4, '#8a6247');
+      pts.forEach(([px, py], j) => { if (j > 0) { leaf(px, py, 17, j % 2 ? 2.6 : 0.5, '#7cbf5a', '#5e9e44', 1.8); if (j % 3 === 0) { ctx.strokeStyle = '#6e9e44'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(px + (j % 2 ? -7 : 7), py + 6, 3.5, 0, Math.PI * 1.6); ctx.stroke(); } } }); }
+    blob([[o.x + 6, by - 30, 12], [o.x + 24, by - 34, 15], [o.x + 44, by - 33, 14], [o.x + 62, by - 29, 11]], '#6fb35c', 2.5); blob([[o.x + 10, by - 34, 7], [o.x + 30, by - 39, 8], [o.x + 50, by - 37, 7]], '#86c45e', 0);
+    limb([[o.x - 6, by - 22], [o.x + o.w + 6, by - 24]], 6, '#a8784f');
+    for (let k = 0; k < 5; k++) leaf(o.x - 4 + k * 17, by - 26 + (k % 2) * 4, 18, k % 2 ? 1.2 : 1.9, '#86c45e', '#5e9e44', 2);
+    for (const [gx, sz] of [[o.x + 16, 1], [o.x + 42, 1.15]]) { const sway = Math.sin(t * 2 + gx) * 1.5; limb([[gx, by - 22], [gx + sway, by - 16]], 2, '#6e5236');
+      for (let r = 0; r < 4; r++) for (let c = 0; c <= 3 - r; c++) paint(C(gx + sway - (3 - r) * 3.2 * sz + c * 6.4 * sz, by - 14 + r * 6 * sz, 3.6 * sz), '#8a5ab0', '#6e4290', 1.4, 1);
+      shine(gx + sway - 4, by - 12, 2.4, 1.4, 0.6, 0); } } },
   mound: { name: '흰개미 둔덕', make: () => ({ w: 52, h: 76 }), draw(o) {
     const b = o.y + o.h; paint(() => { ctx.beginPath(); ctx.moveTo(o.x, b); ctx.quadraticCurveTo(o.x + 2, o.y + 30, o.x + 12, o.y + 18); ctx.quadraticCurveTo(o.x + 16, o.y + 6, o.x + 22, o.y); ctx.quadraticCurveTo(o.x + 30, o.y + 4, o.x + 32, o.y + 22); ctx.quadraticCurveTo(o.x + 38, o.y + 14, o.x + 42, o.y + 24); ctx.quadraticCurveTo(o.x + o.w, o.y + 46, o.x + o.w, b); ctx.closePath(); }, '#d9a066', '#b98048', 3, 7);
     ctx.strokeStyle = 'rgba(122,82,54,.45)'; ctx.lineWidth = 1.8; for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(o.x + 8 + k * 10, b - 4); ctx.quadraticCurveTo(o.x + 10 + k * 9, o.y + 40, o.x + 18 + k * 6, o.y + 16 + k * 4); ctx.stroke(); }
