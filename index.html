@@ -175,6 +175,8 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
 .subform label{font:16px var(--display)}
 .subform input{flex:1;min-width:120px;font:16px var(--body);padding:8px 12px;border-radius:12px;border:2px solid var(--line);background:#fff;color:var(--ink)}
 .subform input:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.subform select{font:16px var(--body);padding:8px 10px;border-radius:12px;border:2px solid var(--line);background:#fff;color:var(--ink)}
+.lb .sch{flex:none;font:12px var(--display);padding:2px 8px;border-radius:999px;background:#fff;border:2px solid var(--line);color:var(--muted)}
 .submit{margin:0;font-size:13px;color:var(--leafD);min-height:1em}
 @media (max-width:640px){.dexzone ul{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:560px){.zones{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:18px;border-radius:22px}}
@@ -263,6 +265,8 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     </dl>
     <p class="note" id="oStats"></p>
     <form id="subForm" class="subform" hidden>
+      <label for="schoolInput">소속</label>
+      <select id="schoolInput" name="school" required><option value="">소속 선택</option></select>
       <label for="nickInput">닉네임</label>
       <input id="nickInput" name="nickname" maxlength="12" autocomplete="nickname" placeholder="최대 12자" required>
       <button id="subBtn" class="btn primary small" type="submit">순위표에 올리기</button>
@@ -305,10 +309,10 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
 <section id="lbMenu" class="overlay" hidden>
   <div class="panel">
     <div class="row between"><div><p class="eyebrow">함께 보는 순위표</p><h2>최고 기록</h2></div><button id="lbClose" class="btn" type="button">닫기</button></div>
-    <div class="row"><label class="sel" for="lbModeSel">코스 <select id="lbModeSel"></select></label><button id="lbRefresh" class="btn small" type="button">새로고침</button></div>
+    <div class="row"><label class="sel" for="lbModeSel">코스 <select id="lbModeSel"></select></label><label class="sel" for="lbSchoolSel">소속 <select id="lbSchoolSel"></select></label><button id="lbRefresh" class="btn small" type="button">새로고침</button></div>
     <p class="note" id="lbStatus"></p>
     <ol id="lbList" class="lb"></ol>
-    <p class="note" id="lbNote">누구나 닉네임으로 기록을 올릴 수 있어요. 같은 닉네임은 가장 높은 기록 하나만 보여요. 자기만 쓰는 닉네임을 정해 주세요.</p>
+    <p class="note" id="lbNote">소속을 고르고 닉네임으로 기록을 올려요. 같은 소속의 같은 닉네임은 가장 높은 기록 하나만 보여요. 소속을 바꾸면 그 소속 순위만 볼 수 있어요.</p>
   </div>
 </section>
 
@@ -2158,7 +2162,7 @@ function render() {
 // 순위표 연결 정보: 구글 Apps Script로 배포한 "웹 앱 URL"(https://script.google.com/macros/s/.../exec)을 넣어요.
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxV9B1zoGPi02WbrrlAG0n6g_Zw3zhLJYS0WYpnSG9m7JLwMeCthqHHyAMZYuR5kv2N/exec';
 const ONLINE = /^https:\/\/script\.google(usercontent)?\.com\//.test(SHEET_URL);
-let LB = [], lbState = ONLINE ? 'idle' : 'off', lbMode = 'full', lastRun = null, submitted = false;
+let lbOldServer = false, LB = [], lbState = ONLINE ? 'idle' : 'off', lbMode = 'full', lastRun = null, submitted = false;
 function saveCards() { try { localStorage.setItem('climate-run-cards', JSON.stringify([...CARDSTATE])); } catch (e) {} }
 function collectCard(id, k, x, y) {
   const key = id + ':' + k, isNew = !CARDSTATE.has(key); CARDSTATE.add(key); if (isNew) G.newCards.push(key);
@@ -2175,21 +2179,27 @@ async function sheetFetch(opts = {}, query = '') {
     return d;
   } finally { clearTimeout(tm); }
 }
+const SCHOOLS = ['포은고', '경주여고', '강북고', '포항고', '매전중', '기타'];
+let lbSchool = '';
 const myNick = () => { try { return localStorage.getItem('climate-run-nick') || ''; } catch (e) { return ''; } };
+const mySchool = () => { try { const v = localStorage.getItem('climate-run-school') || ''; return SCHOOLS.includes(v) ? v : ''; } catch (e) { return ''; } };
+const rowSchool = r => SCHOOLS.includes(r && r.school) ? r.school : '기타';
 const cleanNick = v => v.replace(/[\u0000-\u001f\u007f<>=+@]/g, '').replace(/\s+/g, ' ').trim().slice(0, 12);
 const LOCAL_KEY = 'climate-run-local-board';
 function localBoard() { try { const v = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } }
-function saveLocal(mode, nick, score) {
+function saveLocal(mode, nick, score, school) {
   const b = localBoard(), arr = Array.isArray(b[mode]) ? b[mode].filter(r => r && typeof r.nickname === 'string') : [];
-  const i = arr.findIndex(r => r.nickname.toLowerCase() === nick.toLowerCase());
-  if (i >= 0) { if (score > Number(arr[i].score)) arr[i].score = score; } else arr.push({ nickname: nick, score });
-  arr.sort((a, c) => Number(c.score) - Number(a.score)); b[mode] = arr.slice(0, 30);
+  const i = arr.findIndex(r => r.nickname.toLowerCase() === nick.toLowerCase() && rowSchool(r) === school);
+  if (i >= 0) { if (score > Number(arr[i].score)) arr[i].score = score; } else arr.push({ nickname: nick, school, score });
+  arr.sort((a, c) => Number(c.score) - Number(a.score)); b[mode] = arr.slice(0, 200);
   try { localStorage.setItem(LOCAL_KEY, JSON.stringify(b)); return true; } catch (e) { return false; }
 }
 async function loadLB() {
-  if (!ONLINE) { LB = (localBoard()[lbMode] || []).slice(0, 30); lbState = 'local'; renderLB(); return; }
+  const bySchool = rows => rows.filter(r => !lbSchool || rowSchool(r) === lbSchool).slice(0, 30);
+  if (!ONLINE) { LB = bySchool(localBoard()[lbMode] || []); lbState = 'local'; renderLB(); return; }
   lbState = 'loading'; renderLB();
-  try { const d = await sheetFetch({}, '?mode=' + encodeURIComponent(lbMode)); LB = Array.isArray(d.rows) ? d.rows.slice(0, 30) : []; lbState = 'ok'; }
+  try { const d = await sheetFetch({}, '?mode=' + encodeURIComponent(lbMode) + (lbSchool ? '&school=' + encodeURIComponent(lbSchool) : ''));
+    const rows = Array.isArray(d.rows) ? d.rows : []; LB = bySchool(rows); lbState = 'ok'; lbOldServer = rows.length > 0 && !('school' in rows[0]); }
   catch (e) { lbState = 'err'; }
   renderLB();
 }
@@ -2200,14 +2210,15 @@ function renderLB() {
   if (lbState === 'off') { st.textContent = '순위표가 아직 연결되지 않았어요. 사이트 관리자가 구글 시트 주소를 넣으면 열려요.'; list.replaceChildren(); return; }
   if (lbState === 'loading') { st.textContent = '순위표를 불러오는 중이에요…'; return; }
   if (lbState === 'err') { st.textContent = '순위표를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침을 눌러 주세요.'; list.replaceChildren(); return; }
-  st.textContent = (lbState === 'local' ? '이 기기에 저장된 기록이에요. ' : '') + (LB.length ? '' : '아직 기록이 없어요. 첫 기록의 주인공이 되어 보세요!');
-  const me = myNick().toLowerCase();
+  st.textContent = (lbState === 'local' ? '이 기기에 저장된 기록이에요. ' : '') + (lbOldServer ? '순위표 서버가 예전 버전이라 소속이 보이지 않아요. 관리자가 새 코드를 배포하면 소속별 순위가 나와요. ' : '') + (LB.length ? '' : (lbSchool ? `${lbSchool} 기록이 아직 없어요. 첫 기록의 주인공이 되어 보세요!` : '아직 기록이 없어요. 첫 기록의 주인공이 되어 보세요!'));
+  const me = myNick().toLowerCase(), meS = mySchool();
   list.replaceChildren(...LB.map((r, i) => {
-    const li = document.createElement('li'); if (me && String(r.nickname).toLowerCase() === me) li.className = 'me';
+    const li = document.createElement('li'); if (me && String(r.nickname).toLowerCase() === me && (!meS || rowSchool(r) === meS)) li.className = 'me';
     const rk = document.createElement('span'); rk.className = 'rk'; rk.textContent = String(i + 1);
     const nm = document.createElement('span'); nm.className = 'nm';
     const tx = document.createElement('span'); tx.className = 'tx'; tx.textContent = String(r.nickname || '');
     if (i === 0) { li.classList.add('first'); nm.insertAdjacentHTML('beforeend', CROWN); nm.title = '1등'; }
+    if (!lbOldServer) { const sch = document.createElement('span'); sch.className = 'sch'; sch.textContent = rowSchool(r); nm.append(sch); }
     nm.append(tx);
     const sc = document.createElement('b'); sc.textContent = Number(r.score).toLocaleString();
     li.append(rk, nm, sc); return li;
@@ -2216,16 +2227,17 @@ function renderLB() {
 function prepareSubmit(mode, s) {
   lastRun = { mode, score: s }; submitted = false; const f = $('subForm'), el = $('oSubmit');
   $('subBtn').textContent = ONLINE ? '순위표에 올리기' : '이 기기 순위표에 저장';
-  f.hidden = s <= 0; $('nickInput').value = myNick(); $('subBtn').disabled = false; el.textContent = s > 0 ? (ONLINE ? '닉네임을 적고 순위표에 기록을 올려 보세요.' : '닉네임을 적고 이 기기 순위표에 기록을 남겨 보세요.') : '';
+  f.hidden = s <= 0; $('nickInput').value = myNick(); $('schoolInput').value = mySchool(); $('subBtn').disabled = false; el.textContent = s > 0 ? (ONLINE ? '소속을 고르고 닉네임을 적어 순위표에 기록을 올려 보세요.' : '소속을 고르고 닉네임을 적어 이 기기 순위표에 기록을 남겨 보세요.') : '';
 }
 async function submitScore(ev) {
   ev.preventDefault(); if (!lastRun || submitted) return;
-  const el = $('oSubmit'), nick = cleanNick($('nickInput').value);
+  const el = $('oSubmit'), nick = cleanNick($('nickInput').value), school = $('schoolInput').value;
+  if (!SCHOOLS.includes(school)) { el.textContent = '소속을 골라 주세요.'; $('schoolInput').focus(); return; }
   if (!nick) { el.textContent = '닉네임을 1~12자로 적어 주세요.'; $('nickInput').focus(); return; }
-  try { localStorage.setItem('climate-run-nick', nick); } catch (e) {}
-  if (!ONLINE) { const ok = saveLocal(lastRun.mode, nick, Math.round(lastRun.score)); submitted = ok; $('subBtn').disabled = ok; el.textContent = ok ? `${nick} 님의 ${lastRun.score.toLocaleString()}점을 이 기기 순위표에 저장했어요!` : '이 브라우저에서는 기록을 저장할 수 없어요.'; return; }
+  try { localStorage.setItem('climate-run-nick', nick); localStorage.setItem('climate-run-school', school); } catch (e) {}
+  if (!ONLINE) { const ok = saveLocal(lastRun.mode, nick, Math.round(lastRun.score), school); submitted = ok; $('subBtn').disabled = ok; el.textContent = ok ? `${nick} 님의 ${lastRun.score.toLocaleString()}점을 이 기기 순위표에 저장했어요!` : '이 브라우저에서는 기록을 저장할 수 없어요.'; return; }
   $('subBtn').disabled = true; el.textContent = '순위표에 올리는 중이에요…';
-  try { await sheetFetch({ method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ nickname: nick, mode: lastRun.mode, score: Math.round(lastRun.score) }) }); submitted = true; el.textContent = `${nick} 님의 ${lastRun.score.toLocaleString()}점을 순위표에 올렸어요!`; }
+  try { await sheetFetch({ method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ nickname: nick, school, mode: lastRun.mode, score: Math.round(lastRun.score) }) }); submitted = true; el.textContent = `${school} ${nick} 님의 ${lastRun.score.toLocaleString()}점을 순위표에 올렸어요!`; }
   catch (e) { $('subBtn').disabled = false; el.textContent = e.status === 400 || e.status === 403 ? '기록을 받을 수 없었어요. 닉네임과 점수를 확인해 주세요.' : '지금은 순위표에 연결할 수 없어요. 잠시 뒤 다시 눌러 주세요.'; }
 }
 function drawCardArt(c, id, k, has) {
@@ -2709,6 +2721,9 @@ if (!ONLINE) $('lbNote').textContent = '인터넷 순위표가 연결되지 않�
 $('lbRefresh').addEventListener('click', e => { e.currentTarget.blur(); loadLB(); });
 $('lbModeSel').innerHTML = '<option value="full">전체 기후 일주</option>' + ZONES.map(z => `<option value="${z.id}">${z.name} 기후만</option>`).join('');
 $('lbModeSel').addEventListener('change', e => { lbMode = e.target.value; loadLB(); });
+$('schoolInput').insertAdjacentHTML('beforeend', SCHOOLS.map(v => `<option value="${v}">${v}</option>`).join(''));
+$('lbSchoolSel').innerHTML = '<option value="">전체</option>' + SCHOOLS.map(v => `<option value="${v}">${v}</option>`).join('');
+$('lbSchoolSel').addEventListener('change', e => { lbSchool = e.target.value; loadLB(); });
 blurAfter('dexBtn', () => openDex('menu')); blurAfter('lbBtn', () => openLB('menu'));
 blurAfter('lbBtn2', () => { lbMode = lastOnly < 0 ? 'full' : ZONES[lastOnly].id; $('lbModeSel').value = lbMode; openLB('overMenu'); });
 blurAfter('dexBtn2', () => openDex('overMenu'));
