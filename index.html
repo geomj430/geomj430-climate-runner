@@ -1332,8 +1332,12 @@ function leg(x, s, back, o) {
   const skinLeg = o.legs === 'shorts';
   limb([hip, ank], 7, skinLeg ? (back ? SKIN_SH : SKIN) : (back ? o.botSh : o.bot));
   if (skinLeg) { ctx.save(); ctx.translate(x, -14); ctx.rotate(-s * 0.4); paint(R(-5, -1, 10, 7, 3), back ? o.botSh : o.bot, null, 2); ctx.restore(); }
-  const sx = ank[0] + 2.5, sh = back ? o.shoeSh : o.shoe;
-  paint(E(sx, -3, 6.5, 4), sh, o.shoeSh, 2.5, 1.5); ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillRect(sx - 5.5, -1.2, 11, 1.4);
+  const sx = ank[0] + 1.5, sh = back ? o.shoeSh : o.shoe;
+  // sneaker: rounded upper with a toe cap, a light sole, laces and a little shine
+  const up = () => { ctx.beginPath(); ctx.moveTo(sx - 6, -0.5); ctx.lineTo(sx - 6.6, -4.6); ctx.quadraticCurveTo(sx - 6.2, -8, sx - 2, -8); ctx.quadraticCurveTo(sx + 1, -8, sx + 2.6, -5.4); ctx.quadraticCurveTo(sx + 8.8, -5.2, sx + 8.8, -1.4); ctx.lineTo(sx + 8.8, -0.5); ctx.closePath(); };
+  paint(up, sh, o.shoeSh, 2.2, 1.3);
+  rr(sx - 6.8, -1.9, 15.8, 2.9, 1.4); ctx.fillStyle = back ? '#d9ccb4' : '#efe2c8'; ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 1.8; ctx.stroke();
+  if (!back) { ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.1; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(sx - 1.2, -6.6); ctx.lineTo(sx + 1.4, -5.6); ctx.moveTo(sx - 0.2, -4.9); ctx.lineTo(sx + 2.4, -4.2); ctx.stroke(); shine(sx + 5.6, -4, 1.7, 0.9, 0.55, 0); }
 }
 function drawKid(o, ph, wave) {
   const back = o.legs === 'shorts' ? SKIN_SH : o.topSh;
@@ -1356,10 +1360,23 @@ function drawKid(o, ph, wave) {
   paint(C(5 + ph * 7, -17.5, 3.8), o.mitt || SKIN, o.mitt ? mix(o.mitt, '#000000', 0.15) : SKIN_SH, 2, 1.2);
   }
   const hx = 1, hy = -47;
-  if (o.hat !== 'wrap' && o.hat !== 'hood') blob([[hx - 6, hy + 1, 13], [hx - 9, hy + 8, 7]], HAIR, 2.5);
+  const hasHair = o.hat !== 'wrap' && o.hat !== 'hood';
+  if (hasHair) { // back hair: a bob with soft wavy ends, strands and a sheen
+    const bh = () => { ctx.beginPath(); ctx.moveTo(hx + 6, hy - 15); ctx.quadraticCurveTo(hx - 21, hy - 19, hx - 20.5, hy + 2); ctx.quadraticCurveTo(hx - 21, hy + 13, hx - 16, hy + 17); ctx.quadraticCurveTo(hx - 14.5, hy + 12.5, hx - 11, hy + 16.5); ctx.quadraticCurveTo(hx - 9, hy + 12, hx - 5.5, hy + 15); ctx.quadraticCurveTo(hx - 4, hy + 10, hx - 1, hy + 11); ctx.lineTo(hx + 2, hy); ctx.closePath(); };
+    paint(bh, HAIR, HAIR_SH, 2.5, 2); clipDo(bh, () => { ctx.strokeStyle = 'rgba(60,38,22,.45)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round'; for (const [a, c] of [[-17, 14], [-13, 15], [-9, 13], [-5, 11]]) { ctx.beginPath(); ctx.moveTo(hx + a + 4, hy - 8); ctx.quadraticCurveTo(hx + a - 2, hy + 2, hx + a, hy + c); ctx.stroke(); } ctx.strokeStyle = 'rgba(255,230,200,.35)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(hx - 6, hy + 1, 12, Math.PI * 0.95, Math.PI * 1.3); ctx.stroke(); }); }
   paint(C(hx, hy, 14.5), SKIN, SKIN_SH, 3, 3);
-  if (o.hat !== 'wrap' && o.hat !== 'hood') { paint(C(hx - 7, hy + 2, 4), SKIN, SKIN_SH, 2, 1); blob([[hx - 6, hy - 9, 7], [hx + 2, hy - 11, 7], [hx + 9, hy - 9, 6]], HAIR, 0); ctx.fillStyle = HAIR_SH; ep(hx + 10, hy - 6, 3, 4, 0.4); ctx.fill(); shine(hx - 2, hy - 12, 3, 1.2, 0.35, 0); }
+  if (hasHair) {
+    paint(E(hx - 7, hy + 2.5, 3.3, 4), SKIN, SKIN_SH, 1.6, 1); ctx.strokeStyle = SKIN_SH; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(hx - 7, hy + 2.5, 1.6, -1.2, 1.4); ctx.stroke();
+    blob([[hx - 6, hy - 9, 7], [hx + 2, hy - 11, 7], [hx + 9, hy - 9, 6]], HAIR, 0);
+    shine(hx + 4, hy - 9.5, 3.2, 1.1, 0.45, -0.15); }
   drawHat(hx, hy, o);
+  if (hasHair) { // fringe peeks out under the hat brim
+    const top = { safari: hy - 6, straw: hy - 6.5, rain: hy - 6, cap: hy - 7, bandana: hy - 3.6, ushanka: hy - 6 }[o.hat] ?? hy - 14;
+    ctx.save(); ctx.beginPath(); ctx.rect(hx - 30, top, 60, 30); ctx.clip();
+      paint(() => { ctx.beginPath(); ctx.moveTo(hx - 9, hy - 8); ctx.quadraticCurveTo(hx - 1, hy - 14, hx + 14, hy - 8.5); ctx.quadraticCurveTo(hx + 13.5, hy - 5, hx + 11, hy - 3.5); ctx.quadraticCurveTo(hx + 9.5, hy - 6.5, hx + 6.5, hy - 6.5);
+        ctx.quadraticCurveTo(hx + 5.5, hy - 3.5, hx + 2.5, hy - 2.8); ctx.quadraticCurveTo(hx + 1.5, hy - 6, hx - 2, hy - 6); ctx.quadraticCurveTo(hx - 3.5, hy - 3.5, hx - 6.5, hy - 2.5); ctx.quadraticCurveTo(hx - 6, hy - 5.5, hx - 9, hy - 8); ctx.closePath(); }, HAIR, HAIR_SH, 2, 1.5);
+      ctx.strokeStyle = HAIR_SH; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(hx + 1, hy - 10); ctx.quadraticCurveTo(hx + 3, hy - 7, hx + 2.5, hy - 4); ctx.moveTo(hx + 8, hy - 9.5); ctx.quadraticCurveTo(hx + 9.5, hy - 7, hx + 9, hy - 5); ctx.stroke();
+    ctx.restore(); }
   face(hx, hy, o);
 }
 function drawPlayer(o) {
@@ -2346,7 +2363,7 @@ function scheduleStep(s, step, at) {
 }
 function musicWant() {
   if (state === 'ending') return 'fest:cfb';
-  if (state === 'title' || state === 'intro') return 'zone:title';
+  if (state === 'title') return 'zone:title';
   if ((state !== 'play' && state !== 'quiz') || !G) return '';
   const id = ZONES[G.zi].id; return (G.fest ? 'fest' : G.boss ? 'boss' : 'zone') + ':' + id;
 }
@@ -2529,16 +2546,12 @@ function startGame(only = -1) {
   state = 'play'; jumpQueued = false; keys.down = false; show(null); $('pauseBtn').textContent = '일시정지';
 }
 /* ---------- intro: a kid in a random climate outfit waves hello; any tap opens the menu ---------- */
-let introT = 0, introZ = 0, introNext = 0, introSound = false, introWoke = false;
+let introT = 0, introZ = 0, introNext = 0;
 function introPick(first) { let n = Math.floor(Math.random() * ZONES.length); if (!first && n === introZ) n = (n + 1 + Math.floor(Math.random() * (ZONES.length - 1))) % ZONES.length; introZ = n; introNext = 4.2;
   if (!first) { emit(26, { x: W / 2 - 40, y: GROUND - 110, shape: 'star', c: ['#ffd75a', '#ffffff', '#ff8fb1', '#9fe0a0'], g: 0, sp: 200, max: 0.6, s: 4.5 }); beep(880, 0.12, 'triangle', 0.04, 300); } }
-function startIntro() { document.body.classList.add('intro'); try { initAudio(); } catch (e) {} newGame(); G.banner.t = 99; state = 'intro'; introT = 0; introPick(true); show(null); }
-function introTick(dt) { introSound = !!(AC && AC.state === 'running') && !musicMuted && !muted; introT += dt; introNext -= dt; if (introNext <= 0) introPick(false); }
-// Browsers allow sound only after a tap. If the music is not playing yet, the first tap turns it on and the
-// intro stays; the next tap opens the menu. (Returning visitors whose browser already allows sound skip this.)
-function endIntro() { if (state !== 'intro') return;
-  if (!introSound && !introWoke && !musicMuted && !muted) { introWoke = true; initAudio(); emit(18, { x: W / 2, y: H - 40, shape: 'star', c: ['#ffd75a', '#ff8fb1', '#9fe0a0'], g: 0, sp: 160, max: 0.5, s: 4 }); return; }
-  document.body.classList.remove('intro'); initAudio(); PART.length = 0; toTitle(); beep(660, 0.1, 'triangle', 0.05, 200); }
+function startIntro() { document.body.classList.add('intro'); newGame(); G.banner.t = 99; state = 'intro'; introT = 0; introPick(true); show(null); }
+function introTick(dt) { introT += dt; introNext -= dt; if (introNext <= 0) introPick(false); }
+function endIntro() { if (state !== 'intro') return; document.body.classList.remove('intro'); initAudio(); PART.length = 0; toTitle(); beep(660, 0.1, 'triangle', 0.05, 200); }
 function drawIntro() {
   const z = ZONES[introZ], id = z.id; BG[id](0.25); propLayer(id, 0.25);
   ctx.fillStyle = 'rgba(255,248,231,.28)'; ctx.fillRect(0, 0, W, H);
@@ -2554,7 +2567,7 @@ function drawIntro() {
   ctx.textAlign = 'left'; ctx.fillStyle = INK; ctx.font = F(22); ctx.fillText('안녕! 같이 달려 볼래?', bx + 22, by + 53); ctx.restore();
   drawParts();
   if (introT > 0.8) { const by2 = H - 60 - Math.abs(Math.sin(t * 3)) * 4; ctx.save(); rr(W / 2 - 150, by2, 300, 42, 21); shape('#fff8e7', 3, '#ead9b8');
-    ctx.globalAlpha = 0.65 + 0.35 * Math.sin(t * 4); ctx.fillStyle = INK; ctx.font = F(19); ctx.textAlign = 'center'; ctx.fillText(introSound || introWoke || musicMuted || muted ? '화면을 누르면 시작해요' : '화면을 누르면 음악이 나와요 ♪', W / 2, by2 + 28); ctx.restore(); ctx.textAlign = 'left'; }
+    ctx.globalAlpha = 0.65 + 0.35 * Math.sin(t * 4); ctx.fillStyle = INK; ctx.font = F(19); ctx.textAlign = 'center'; ctx.fillText('화면을 누르면 시작해요', W / 2, by2 + 28); ctx.restore(); ctx.textAlign = 'left'; }
 }
 function toTitle() { newGame(); G.banner.t = 99; state = 'title'; $('bestTitle').textContent = best.toLocaleString(); show('menu'); }
 function togglePause() {
