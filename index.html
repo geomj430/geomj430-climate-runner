@@ -2529,12 +2529,16 @@ function startGame(only = -1) {
   state = 'play'; jumpQueued = false; keys.down = false; show(null); $('pauseBtn').textContent = '일시정지';
 }
 /* ---------- intro: a kid in a random climate outfit waves hello; any tap opens the menu ---------- */
-let introT = 0, introZ = 0, introNext = 0;
+let introT = 0, introZ = 0, introNext = 0, introSound = false, introWoke = false;
 function introPick(first) { let n = Math.floor(Math.random() * ZONES.length); if (!first && n === introZ) n = (n + 1 + Math.floor(Math.random() * (ZONES.length - 1))) % ZONES.length; introZ = n; introNext = 4.2;
   if (!first) { emit(26, { x: W / 2 - 40, y: GROUND - 110, shape: 'star', c: ['#ffd75a', '#ffffff', '#ff8fb1', '#9fe0a0'], g: 0, sp: 200, max: 0.6, s: 4.5 }); beep(880, 0.12, 'triangle', 0.04, 300); } }
-function startIntro() { document.body.classList.add('intro'); newGame(); G.banner.t = 99; state = 'intro'; introT = 0; introPick(true); show(null); }
-function introTick(dt) { introT += dt; introNext -= dt; if (introNext <= 0) introPick(false); }
-function endIntro() { if (state !== 'intro') return; document.body.classList.remove('intro'); initAudio(); PART.length = 0; toTitle(); beep(660, 0.1, 'triangle', 0.05, 200); }
+function startIntro() { document.body.classList.add('intro'); try { initAudio(); } catch (e) {} newGame(); G.banner.t = 99; state = 'intro'; introT = 0; introPick(true); show(null); }
+function introTick(dt) { introSound = !!(AC && AC.state === 'running') && !musicMuted && !muted; introT += dt; introNext -= dt; if (introNext <= 0) introPick(false); }
+// Browsers allow sound only after a tap. If the music is not playing yet, the first tap turns it on and the
+// intro stays; the next tap opens the menu. (Returning visitors whose browser already allows sound skip this.)
+function endIntro() { if (state !== 'intro') return;
+  if (!introSound && !introWoke && !musicMuted && !muted) { introWoke = true; initAudio(); emit(18, { x: W / 2, y: H - 40, shape: 'star', c: ['#ffd75a', '#ff8fb1', '#9fe0a0'], g: 0, sp: 160, max: 0.5, s: 4 }); return; }
+  document.body.classList.remove('intro'); initAudio(); PART.length = 0; toTitle(); beep(660, 0.1, 'triangle', 0.05, 200); }
 function drawIntro() {
   const z = ZONES[introZ], id = z.id; BG[id](0.25); propLayer(id, 0.25);
   ctx.fillStyle = 'rgba(255,248,231,.28)'; ctx.fillRect(0, 0, W, H);
@@ -2550,7 +2554,7 @@ function drawIntro() {
   ctx.textAlign = 'left'; ctx.fillStyle = INK; ctx.font = F(22); ctx.fillText('안녕! 같이 달려 볼래?', bx + 22, by + 53); ctx.restore();
   drawParts();
   if (introT > 0.8) { const by2 = H - 60 - Math.abs(Math.sin(t * 3)) * 4; ctx.save(); rr(W / 2 - 150, by2, 300, 42, 21); shape('#fff8e7', 3, '#ead9b8');
-    ctx.globalAlpha = 0.65 + 0.35 * Math.sin(t * 4); ctx.fillStyle = INK; ctx.font = F(19); ctx.textAlign = 'center'; ctx.fillText('화면을 누르면 시작해요', W / 2, by2 + 28); ctx.restore(); ctx.textAlign = 'left'; }
+    ctx.globalAlpha = 0.65 + 0.35 * Math.sin(t * 4); ctx.fillStyle = INK; ctx.font = F(19); ctx.textAlign = 'center'; ctx.fillText(introSound || introWoke || musicMuted || muted ? '화면을 누르면 시작해요' : '화면을 누르면 음악이 나와요 ♪', W / 2, by2 + 28); ctx.restore(); ctx.textAlign = 'left'; }
 }
 function toTitle() { newGame(); G.banner.t = 99; state = 'title'; $('bestTitle').textContent = best.toLocaleString(); show('menu'); }
 function togglePause() {
