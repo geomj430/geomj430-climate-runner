@@ -1399,7 +1399,7 @@ function drawKid(o, ph, wave) {
   }
   const hx = 1, hy = -47;
   const hasHair = o.hat !== 'wrap' && o.hat !== 'hood';
-  if (hasHair) { // back hair: a bob with soft wavy ends, strands and a sheen
+  if (hasHair && o.hat !== 'ushanka') { // back hair: a bob with soft wavy ends (the ushanka's fur flaps cover it)
     const bh = () => { ctx.beginPath(); ctx.moveTo(hx + 6, hy - 15); ctx.quadraticCurveTo(hx - 21, hy - 19, hx - 20.5, hy + 2); ctx.quadraticCurveTo(hx - 21, hy + 13, hx - 16, hy + 17); ctx.quadraticCurveTo(hx - 14.5, hy + 12.5, hx - 11, hy + 16.5); ctx.quadraticCurveTo(hx - 9, hy + 12, hx - 5.5, hy + 15); ctx.quadraticCurveTo(hx - 4, hy + 10, hx - 1, hy + 11); ctx.lineTo(hx + 2, hy); ctx.closePath(); };
     // hats that sit snugly (bandana, rain hat, ushanka) must not let the back hair poke out above them
     const hairTop = { bandana: hy - 4, rain: hy - 1, ushanka: hy + 1 }[o.hat];
