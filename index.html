@@ -1805,7 +1805,7 @@ function update(dt, attract) {
       const o = g.nextObj || mk(choose()); g.nextObj = mk(choose());
       if (o.pit) { o.y = GROUND; o.h = H - GROUND; } else if (o.y === undefined) o.y = GROUND - o.h;
       o.x = W + 40; g.obs.push(o);
-      g.gap = o.w + g.speed * (0.78 + Math.random() * 0.7) * 0.92 * ({ bw: 0.88 }[zz.id] ?? 1) + (o.vx > 0 ? o.vx * 0.5 : 0); // desert: obstacles a little closer together
+      g.gap = o.w + g.speed * (0.78 + Math.random() * 0.7) * 0.92 * ({ bw: 0.88, df: 0.9, et: 0.9 }[zz.id] ?? 1) + (o.vx > 0 ? o.vx * 0.5 : 0); // desert: obstacles a little closer together
       // Plan spacing by when each thing reaches the player (movers arrive sooner than their spawn distance suggests).
       const S = g.speed, Px = player.x + 18, X0 = W + 40, n2 = g.nextObj, v1 = o.vx || 0, v2 = n2.vx || 0;
       const D1 = (X0 + o.w / 2 - Px) * S / (S + v1), base2 = (X0 + n2.w / 2 - Px) * S / (S + v2);
@@ -1821,12 +1821,12 @@ function update(dt, attract) {
         else if (g.orbDue > 0) { g.items.push({ type: 'orb', x: xi, y: GROUND - 40 - Math.random() * 70, ph: 0 }); g.orbDue--; }
         else if (wantItem) {
           // cold climates hand out warm tea more often (and a bit more when the runner is already chilly)
-          g.itemTimer = (3.4 + Math.random() * 2.4) * ({ df: 0.4, et: 0.3 }[zz.id] ?? 1) * (d < 0 && g.temp < 36.3 ? 0.75 : 1);
+          g.itemTimer = (3.4 + Math.random() * 2.4) * ({ df: 0.6, et: 0.38 }[zz.id] ?? 1) * (d < 0 && g.temp < 36.3 ? 0.75 : 1);
           let type = Math.abs(d) < 0.05 ? (g.temp > 37 ? 'water' : 'warm') : (d < 0 ? 'warm' : 'water');
           if (g.hearts < MAXH && !g.heartGiven && zp > 0.45) { type = 'heart'; g.heartGiven = true; }
           g.items.push({ type, x: xi, y: Math.random() < 0.5 ? GROUND - 34 : GROUND - 120, ph: Math.random() * 6 });
         } else {
-          if ((zz.id === 'df' || zz.id === 'et') && d < 0 && g.temp < 37.6 && Math.random() < 0.6) g.items.push({ type: 'warm', x: xi, y: Math.random() < 0.5 ? GROUND - 34 : GROUND - 120, ph: Math.random() * 6 });
+          if ((zz.id === 'df' || zz.id === 'et') && d < 0 && g.temp < 37.6 && Math.random() < 0.35) g.items.push({ type: 'warm', x: xi, y: Math.random() < 0.5 ? GROUND - 34 : GROUND - 120, ph: Math.random() * 6 });
           else { const high = Math.random() < 0.4; for (let k = 0; k < 3; k++) g.items.push({ type: 'gem', x: xi - 36 + k * 36, y: (high ? GROUND - 122 : GROUND - 30) - (k === 1 ? 14 : 0), ph: k }); }
         }
       }
