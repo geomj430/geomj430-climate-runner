@@ -1964,8 +1964,8 @@ function rhinoBoss(B, b) {
   paint(horn(hx - 10, hy - 6, 22, 6, 4), '#efe3c8', '#d4c6a8', 3, 2); paint(horn(hx - 21, hy + 4, 34, 8, 10), '#f6ecd6', '#d9cbad', 3, 2.5); shine(hx - 26, hy - 14, 1.6, 5, 0.6, 0.3);
   const ex = hx + 4, ey = hy - 9;
   if (B.happy) { ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(ex, ey + 1, 4, Math.PI + 0.35, -0.35); ctx.stroke(); }
-  else { eye(ex, ey, 3.6); line([[ex - 6, ey - 8], [ex + 5, ey - 4.5]], INK, 3); }
-  blush(ex - 8, ey + 9, 4);
+  else bossEye(B, ex, ey, 3.6, false, s.body);
+  if (B.happy) blush(ex - 8, ey + 9, 4);
   crown(hx + 26, hy - 24, 0.85);
 }
 /* Species bosses (same style as the rhino): legs come out under the body, own head and body shapes. */
@@ -1981,10 +1981,20 @@ function bossLeg(B, lx, top, b, w1, w2, col, kind, k) {
   paint(() => { ctx.beginPath(); ctx.moveTo(lx - w1 / 2, top); ctx.lineTo(lx + w1 / 2, top); ctx.quadraticCurveTo(lx + w1 / 2, (top + b) / 2, lx + dx + w2 / 2, b - 4); ctx.lineTo(lx + dx - w2 / 2, b - 4); ctx.quadraticCurveTo(lx - w1 / 2, (top + b) / 2, lx - w1 / 2, top); ctx.closePath(); }, col, mix(col, '#000000', 0.12), 3, 2);
   bossFoot(lx + dx, b, w2, col, kind);
 }
-function bossEye(B, ex, ey, r, light) {
+function bossEye(B, ex, ey, r, light, skin = '#a9b0b8') {
   if (B.happy) { ctx.strokeStyle = light ? '#ffffff' : INK; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(ex, ey + 1, r * 1.1, Math.PI + 0.35, -0.35); ctx.stroke(); return; }
-  if (light) { paint(C(ex, ey, r + 1.6), '#ffffff', null, 0); }
-  eye(ex, ey, r); line([[ex - r * 1.7, ey - r * 2.2], [ex + r * 1.4, ey - r * 1.25]], light ? '#ffffff' : INK, 3);
+  // glaring eye: the upper lid slants down toward the snout, thick brow, red anger mark
+  const ew = r * 1.35, eh = r * 1.25, white = E(ex, ey, ew, eh);
+  paint(white, '#ffffff', null, 2.2);
+  clipDo(white, () => { ctx.fillStyle = '#2b2018'; cp(ex - r * 0.35, ey + r * 0.25, r * 0.78); ctx.fill(); ctx.fillStyle = '#ffffff'; cp(ex - r * 0.55, ey - r * 0.05, r * 0.25); ctx.fill();
+    ctx.fillStyle = skin; poly([[ex - ew - 2, ey - eh * 0.05], [ex + ew + 2, ey - eh * 0.75], [ex + ew + 2, ey - eh - 4], [ex - ew - 2, ey - eh - 4]]); ctx.fill(); });
+  line([[ex - ew - 0.5, ey - eh * 0.05], [ex + ew + 0.5, ey - eh * 0.75]], INK, 2.4);
+  const bc = light ? '#ffffff' : INK; ctx.strokeStyle = bc; ctx.lineWidth = r * 1.25; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(ex + ew * 1.2, ey - eh * 1.85); ctx.lineTo(ex - ew * 1.05, ey - eh * 0.85); ctx.stroke();
+  B._mark = [ex - r * 2.6, ey - r * 5.4, r * 1.05]; // drawn last by drawBoss so the crown does not hide it
+}
+function angerMark(x, y, s) { // little red "vein pop" cross that throbs
+  const k = s * (1 + 0.12 * Math.sin(t * 9)); ctx.strokeStyle = '#e8402a'; ctx.lineWidth = Math.max(2, k * 0.75); ctx.lineCap = 'round';
+  for (let q = 0; q < 4; q++) { ctx.save(); ctx.translate(x, y); ctx.rotate(q * Math.PI / 2); ctx.beginPath(); ctx.moveTo(k * 0.6, -k * 1.9); ctx.quadraticCurveTo(k * 0.7, -k * 0.7, k * 1.9, -k * 0.6); ctx.stroke(); ctx.restore(); }
 }
 function neckFill(pts, col) { // fill a neck joint and outline only its top and bottom edges
   const [a, b2, c, d] = pts; ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(...a); ctx.quadraticCurveTo(...b2); ctx.lineTo(...c); ctx.quadraticCurveTo(...d); ctx.closePath(); ctx.fill();
@@ -2009,7 +2019,7 @@ function jaguarBoss(B, b) {
   paint(E(hx - 10, hy + 6, 10, 7.5), s.belly, null, 2.8); paint(PL([[hx - 21, hy - 1], [hx - 14, hy - 1], [hx - 17.5, hy + 3.5]]), '#e98a8a', null, 2);
   ctx.strokeStyle = INK; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(hx - 17.5, hy + 3.5); ctx.lineTo(hx - 17.5, hy + 7); ctx.quadraticCurveTo(hx - 13, hy + 10, hx - 9, hy + 7); ctx.stroke();
   ctx.fillStyle = '#8a6a4a'; for (const [dx, dy] of [[-12, 4], [-9, 6], [-12, 8]]) { cp(hx + dx, hy + dy, 0.9); ctx.fill(); }
-  bossEye(B, hx - 3, hy - 4, 3.6); blush(hx + 3, hy + 6, 3.4); crown(hx + 4, hy - 17, 0.85);
+  bossEye(B, hx - 3, hy - 4, 3.6, false, s.body); if (B.happy) blush(hx + 3, hy + 6, 3.4); crown(hx + 4, hy - 17, 0.85);
 }
 function yakBoss(B, b) {
   const s = B.s, w = B.w, h = B.h, x = B.x, cx = x + w * 0.58, cy = b - h * 0.52, rx = w * 0.38, ry = h * 0.28, hair = '#2e221a';
@@ -2027,7 +2037,7 @@ function yakBoss(B, b) {
   paint(E(hx - 11, hy + 8, 11, 9), '#d8cfc4', '#bfb4a8', 3, 2); ctx.fillStyle = INK; ep(hx - 18, hy + 6, 1.8, 2.4, 0.3); ctx.fill();
   ctx.strokeStyle = INK; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(hx - 19, hy + 12); ctx.quadraticCurveTo(hx - 13, hy + 15, hx - 7, hy + 12); ctx.stroke();
   ctx.fillStyle = hair; for (let k = 0; k < 4; k++) { poly([[hx - 12 + k * 6, hy + 15], [hx - 9 + k * 6, hy + 24 + (k % 2) * 3], [hx - 6 + k * 6, hy + 15]]); ctx.fill(); }
-  bossEye(B, hx - 3, hy - 3, 3.4, true); blush(hx + 3, hy + 6, 3.4); crown(hx + 8, hy - 19, 0.85);
+  bossEye(B, hx - 3, hy - 3, 3.4, true, s.body); if (B.happy) blush(hx + 3, hy + 6, 3.4); crown(hx + 8, hy - 19, 0.85);
 }
 function boarBoss(B, b) {
   const s = B.s, w = B.w, h = B.h, x = B.x, cx = x + w * 0.6, cy = b - h * 0.45, rx = w * 0.36, ry = h * 0.27;
@@ -2046,7 +2056,7 @@ function boarBoss(B, b) {
   ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(hx - 20, hy + 14); ctx.quadraticCurveTo(hx - 10, hy + 17, hx - 2, hy + 13); ctx.stroke();
   for (const d of [0, 5]) { ctx.strokeStyle = INK; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(hx - 13 + d, hy + 13); ctx.quadraticCurveTo(hx - 21 + d, hy + 9, hx - 18 + d, hy - 1); ctx.stroke(); ctx.strokeStyle = '#fffaf0'; ctx.lineWidth = 3; ctx.stroke(); }
   paint(PL([[hx + 8, hy - 16], [hx + 12, hy - 33], [hx + 19, hy - 17]]), s.body, null, 2.6); ctx.fillStyle = '#d99a9a'; poly([[hx + 11, hy - 18], [hx + 12.5, hy - 28], [hx + 16, hy - 18]]); ctx.fill();
-  bossEye(B, hx - 2, hy - 7, 3.3); blush(hx + 2, hy + 4, 3.4); crown(hx + 2, hy - 18, 0.8);
+  bossEye(B, hx - 2, hy - 7, 3.3, false, s.body); if (B.happy) blush(hx + 2, hy + 4, 3.4); crown(hx + 2, hy - 18, 0.8);
 }
 function badgerBoss(B, b) {
   const s = B.s, w = B.w, h = B.h, x = B.x, cx = x + w * 0.58, cy = b - h * 0.42, rx = w * 0.4, ry = h * 0.26, leg = '#2b2b33';
@@ -2064,7 +2074,7 @@ function badgerBoss(B, b) {
   head(); ctx.strokeStyle = INK; ctx.lineWidth = 3.5; ctx.stroke();
   paint(E(hx - 25, hy + 6, 4, 3.4), '#2b2b33', null, 2); ctx.fillStyle = 'rgba(255,255,255,.6)'; ep(hx - 26, hy + 5, 1.5, 0.9); ctx.fill();
   ctx.strokeStyle = INK; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(hx - 21, hy + 10); ctx.quadraticCurveTo(hx - 14, hy + 13, hx - 8, hy + 10); ctx.stroke();
-  bossEye(B, hx - 3, hy - 2, 3.2, true); blush(hx - 2, hy + 9, 3.2); crown(hx + 6, hy - 16, 0.8);
+  bossEye(B, hx - 3, hy - 2, 3.2, true, '#2b2b33'); if (B.happy) blush(hx - 2, hy + 9, 3.2); crown(hx + 6, hy - 16, 0.8);
 }
 function bearBoss(B, b, polar) {
   const s = B.s, w = B.w, h = B.h, x = B.x, cx = x + w * 0.6, cy = b - h * 0.5, rx = w * 0.38, ry = h * (polar ? 0.27 : 0.3);
@@ -2088,7 +2098,7 @@ function bearBoss(B, b, polar) {
   const nx = polar ? hx - 24 : hx - 23, ny = polar ? hy + 5 : hy + 3;
   paint(E(nx, ny, 4.6, 3.6), '#2e2622', null, 2); ctx.fillStyle = 'rgba(255,255,255,.6)'; ep(nx - 1.4, ny - 1.2, 1.6, 0.9); ctx.fill();
   ctx.strokeStyle = INK; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(nx + 1, ny + 3.5); ctx.lineTo(nx + 1, ny + 6); ctx.quadraticCurveTo(nx + 6, ny + 9, nx + 11, ny + 6); ctx.stroke();
-  bossEye(B, hx - (polar ? 5 : 4), hy - (polar ? 3 : 4), 3.4); blush(hx + 2, hy + 6, 3.4); crown(hx + (polar ? 6 : 6), hy - (polar ? 15 : 18), 0.85);
+  bossEye(B, hx - (polar ? 5 : 4), hy - (polar ? 3 : 4), 3.4, false, s.body); if (B.happy) blush(hx + 2, hy + 6, 3.4); crown(hx + (polar ? 6 : 6), hy - (polar ? 15 : 18), 0.85);
 }
 function lizardBoss(B, b) {
   const s = B.s, w = B.w, x = B.x, cy = b - 26, cx = x + w * 0.5, flick = Math.sin(t * 9) > 0.5;
@@ -2100,7 +2110,7 @@ function lizardBoss(B, b) {
   const hx = x + 22, hy = cy - 8; paint(E(hx, hy, 26, 15, -0.08), s.body, s.sh, 3.5, 4); ctx.fillStyle = INK; cp(hx - 20, hy - 2, 2); ctx.fill();
   line([[hx - 22, hy + 6], [hx + 6, hy + 8]], INK, 2.2); ctx.strokeStyle = 'rgba(90,62,36,.55)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(hx + 14, hy + 6, 7, -0.3, 1.4); ctx.stroke();
   ctx.fillStyle = 'rgba(120,86,52,.5)'; for (const [dx, dy] of [[-8, -7], [-2, -9], [4, -8], [12, -6], [10, 0], [16, -2]]) { ep(hx + dx, hy + dy, 1.8, 1.3); ctx.fill(); }
-  paint(E(hx + 3, hy - 7, 8, 3.5, -0.1), s.sh, null, 0); bossEye(B, hx + 3, hy - 3, 3.6); blush(hx + 10, hy + 3, 3.2); crown(hx + 8, hy - 13, 0.85);
+  paint(E(hx + 3, hy - 7, 8, 3.5, -0.1), s.sh, null, 0); bossEye(B, hx + 3, hy - 3, 3.6, false, s.body); if (B.happy) blush(hx + 10, hy + 3, 3.2); crown(hx + 8, hy - 13, 0.85);
 }
 function drawBoss(B) {
   const b = GROUND + B.yo, tel = bossTel(B);
@@ -2113,7 +2123,8 @@ function drawBoss(B) {
   if (tel) ctx.translate(Math.sin(t * 70) * 2.5, 0);
   if (B.st === 'throw' && B.cool > 0.35) { const ox = B.x + B.w / 2; ctx.translate(ox, b); ctx.rotate(-0.06); ctx.translate(-ox, -b); }
   const art = { af: jaguarBoss, aw: rhinoBoss, bs: yakBoss, cs: boarBoss, cfb: badgerBoss, df: (B, b) => bearBoss(B, b, false), et: (B, b) => bearBoss(B, b, true) }[B.id];
-  if (B.s.low) lizardBoss(B, b); else if (art) art(B, b); else beastBoss(B, b);
+  B._mark = null; if (B.s.low) lizardBoss(B, b); else if (art) art(B, b); else beastBoss(B, b);
+  if (B._mark && !B.happy && B.st !== 'dead') angerMark(...B._mark);
   ctx.restore();
   if (tel) { const bx = B.x + B.w * (B.face === 1 ? 0.8 : 0.2), by = b - B.h - 46; ctx.save(); ctx.globalAlpha *= 0.7 + 0.3 * Math.sin(t * 20); rr(bx - 18, by - 18, 36, 36, 12); shape('#fff8e7', 3); ctx.fillStyle = '#e8573a'; ctx.font = F(26); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', bx, by + 1); ctx.textBaseline = 'alphabetic'; ctx.restore(); }
   if (bossRunning(B)) for (let k = 0; k < 5; k++) { const p = (t * 3 + k / 5) % 1, dx = B.face === 1 ? 6 - p * 60 : B.w - 6 + p * 60; ctx.fillStyle = `rgba(214,180,130,${0.55 * (1 - p)})`; cp(B.x + dx, GROUND - 6 - p * 18, 6 + p * 12); ctx.fill(); }
