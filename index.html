@@ -230,6 +230,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
       <dt><span class="dot" style="background:#ffd75a"></span> 별</dt><dd>관측 데이터 · +20점</dd>
       <dt>밟기</dt><dd>달려오는 동물 위로 떨어지면 퇴치 +50점 · 그냥 피하면 +10점</dd>
       <dt>콤보</dt><dd>별·밟기·퀴즈 정답이 이어지면 점수 최대 ×5 · 부딪히면 처음부터</dd>
+      <dt>콤보 피버</dt><dd>콤보 20마다 10초 동안 점수 2배 · 더 빨라지고 장애물과 별이 촘촘해져요 · 부딪히면 끝나요</dd>
       <dt>기후 퀴즈</dt><dd>퀴즈가 나오면 게임이 잠깐 멈춰요 · 마우스로 클릭하거나 화면을 터치해 답을 골라요</dd>
       <dt>보스</dt><dd>기후가 끝날 때 등장 · 달려올 때 머리를 밟거나 무지개 구슬을 던져 퇴치</dd>
       <dt><span class="dot" style="background:linear-gradient(135deg,#ff8fb1,#ffd75a,#9fe0a0,#7cc4f0)"></span> 무지개 구슬</dt><dd>최대 2개 · 보스에게만 <kbd>Space</kbd>(휴대폰은 던지기 버튼)로 던져요</dd>
@@ -1535,9 +1536,19 @@ function enterZone(n, attract) {
   if (!attract) { G.flash = 0.3; G.flashC = '255,255,255'; if (!G.visited.includes(n)) G.visited.push(n); beep(660, 0.14, 'triangle', 0.05); setTimeout(() => beep(880, 0.18, 'triangle', 0.05), 120); }
 }
 const mult = () => 1 + Math.min(4, Math.floor(G.combo / 5));
+/* ---------- combo fever: every 20 combo -> 10 s of double points; the run speeds up a little and gets busier ---------- */
+const FEVER_AT = 20, FEVER_T = 10;
+function startFever() {
+  G.fever = FEVER_T; G.nextFever = G.combo + FEVER_AT; G.feverAcc = 0; G.feverN = (G.feverN || 0) + 1;
+  G.toast = { t: 0, text: '콤보 피버!', sub: `${FEVER_T}초 동안 점수 2배 · 더 빠르고 바빠져요` }; G.flash = 0.35; G.flashC = '255,230,150';
+  emit(40, { x: player.x + 18, y: player.y - 40, shape: 'star', c: ['#ff8fb1', '#ffd75a', '#9fe0a0', '#7cc4f0', '#b9a0e8'], g: 0, sp: 320, max: 0.8, s: 5 });
+  [784, 988, 1175, 1568].forEach((f, i) => setTimeout(() => beep(f, 0.14, 'triangle', 0.06), i * 70));
+}
+function endFever(broken) { if (!(G.fever > 0)) return; G.fever = 0; G.pops.push({ text: broken ? '피버 끝!' : '피버 종료', x: player.x + 18, y: player.y - 110, t: 0, c: '#9a7ed0', big: true }); }
 function addScore(base, x, y, combo = true, color = '#f0a91a', label) {
   if (combo) { G.combo++; G.bestCombo = Math.max(G.bestCombo, G.combo); if (G.combo % 5 === 0 && G.combo <= 20) { fxRing(player.x + 18, player.y - 30, '#ffd75a'); G.pops.push({ text: `콤보 ×${mult()}!`, x: player.x + 18, y: player.y - 104, t: 0, c: '#e8573a', big: true }); beep(990, 0.12, 'triangle', 0.05, 300); } }
-  const pts = base * (combo ? mult() : 1); G.bonus += pts;
+  const pts = base * (combo ? mult() : 1) * (G.fever > 0 ? 2 : 1); G.bonus += pts;
+  if (combo && G.combo >= (G.nextFever || FEVER_AT) && !(G.fever > 0) && state === 'play') startFever();
   G.pops.push({ text: label || `+${pts}`, x, y, t: 0, c: color });
   return pts;
 }
@@ -1549,7 +1560,7 @@ function hurt(cause, force) {
   const p = player; if (!force && p.inv > 0) return;
   G.hearts--; p.inv = 1.6; fxHurt(); G.shake = RM ? 0 : 0.3; G.flash = 0.25; G.flashC = '255,140,150';
   if (G.combo >= 5) G.pops.push({ text: '콤보 끊김', x: p.x + 18, y: p.y - 100, t: 0, c: '#8a7563' });
-  G.combo = 0;
+  G.combo = 0; G.nextFever = FEVER_AT; endFever(true);
   beep(220, 0.3, 'triangle', 0.07, -120); G.pops.push({ text: '아야!', x: p.x + 18, y: p.y - 78, t: 0, c: '#ff6f8f' });
   if (G.hearts <= 0) { G.cause = cause; gameOver(); }
 }
@@ -1734,8 +1745,11 @@ function startFest() {
 function update(dt, attract) {
   const g = G;
   g.speed = attract ? 260 : g.fest ? 0 : Math.min(660, 365 + g.dist * 0.0034) + g.loop * 45;
+  if (!attract && g.fever > 0 && !g.boss && !g.fest) g.speed *= 1.08;
   const dx = g.speed * dt; scroll += dx;
   if (!attract) g.dist += dx;
+  if (!attract && g.fever > 0) { g.feverAcc += dx / 10; const add = Math.floor(g.feverAcc); g.bonus += add; g.feverAcc -= add; g.fever -= dt; if (g.fever <= 0) endFever(false);
+    if (Math.random() < dt * 30) emit(1, { x: player.x + 4, y: player.y - 20 - Math.random() * 30, shape: 'star', c: ['#ff8fb1', '#ffd75a', '#9fe0a0', '#7cc4f0', '#b9a0e8'], g: 0, sp: 40, vx: -g.speed * 0.6, max: 0.5, s: 3.5 }); }
   // Stage progress follows time at the starting pace (not distance), so every climate lasts about as long even as the run speeds up.
   const zdx = dx * Math.min(1, 360 / Math.max(1, g.speed));
   if (!g.bossPending && !g.fest) g.zoneDist = attract ? g.zoneDist + dx * 5 : (g.zoneDist >= ZONE_LEN ? g.zoneDist : Math.min(ZONE_LEN * 0.9, g.zoneDist + zdx));
@@ -1805,14 +1819,14 @@ function update(dt, attract) {
       const o = g.nextObj || mk(choose()); g.nextObj = mk(choose());
       if (o.pit) { o.y = GROUND; o.h = H - GROUND; } else if (o.y === undefined) o.y = GROUND - o.h;
       o.x = W + 40; g.obs.push(o);
-      g.gap = o.w + g.speed * (0.78 + Math.random() * 0.7) * 0.92 * ({ bw: 0.88, df: 0.9, et: 0.9 }[zz.id] ?? 1) + (o.vx > 0 ? o.vx * 0.5 : 0); // desert: obstacles a little closer together
+      g.gap = o.w + g.speed * (0.78 + Math.random() * 0.7) * 0.92 * ({ bw: 0.88, df: 0.9, et: 0.9 }[zz.id] ?? 1) * (g.fever > 0 ? 0.82 : 1) + (o.vx > 0 ? o.vx * 0.5 : 0); // desert: obstacles a little closer together
       // Plan spacing by when each thing reaches the player (movers arrive sooner than their spawn distance suggests).
       const S = g.speed, Px = player.x + 18, X0 = W + 40, n2 = g.nextObj, v1 = o.vx || 0, v2 = n2.vx || 0;
       const D1 = (X0 + o.w / 2 - Px) * S / (S + v1), base2 = (X0 + n2.w / 2 - Px) * S / (S + v2);
       const clear = S * 0.55 + 40;
       const fit = need => { if (g.gap + base2 - D1 < need) g.gap = need + D1 - base2; };
       fit(o.w / 2 + n2.w / 2 + clear * 1.38);
-      const wantItem = g.itemTimer <= 0 || g.cardDue || g.orbDue || g.preHeart === 'due', wantGems = !wantItem && Math.random() < 0.45;
+      const wantItem = g.itemTimer <= 0 || g.cardDue || g.orbDue || g.preHeart === 'due', wantGems = !wantItem && Math.random() < (g.fever > 0 ? 0.8 : 0.45);
       if (wantItem || wantGems) {
         const half = wantGems ? 44 : 16; fit(o.w / 2 + n2.w / 2 + 1.8 * (clear + half));
         const xi = Math.max(W + 20 + half, Px + (D1 + g.gap + base2) / 2);
@@ -2378,10 +2392,19 @@ function drawFest() {
   ctx.textAlign = 'center'; ctx.fillStyle = '#e8573a'; ctx.font = F(26); ctx.fillText('보스 퇴치!!', W / 2, y + 34);
   ctx.fillStyle = INK; ctx.font = F(14, 'b'); ctx.fillText(FEST[id], W / 2, y + 60); ctx.restore();
 }
+function feverFx() {
+  if (!(G.fever > 0)) return; const k = clamp(G.fever / FEVER_T, 0, 1), pulse = RM ? 0.5 : 0.5 + 0.5 * Math.sin(t * 10);
+  const hue = (t * 120) % 360; ctx.save(); ctx.lineWidth = 10; ctx.strokeStyle = `hsla(${hue},90%,70%,${0.35 + 0.25 * pulse})`; ctx.strokeRect(5, 5, W - 10, H - 10); ctx.restore();
+  const x = W / 2 - 110, y = H - 46; rr(x, y, 220, 30, 15); shape('rgba(255,248,231,0.95)', 3, '#ead9b8');
+  const g = ctx.createLinearGradient(x, 0, x + 220, 0); ['#ff8fb1', '#ffd75a', '#9fe0a0', '#7cc4f0', '#b9a0e8'].forEach((c, i) => g.addColorStop(i / 4, c));
+  rr(x + 6, y + 6, 208 * k, 18, 9); ctx.fillStyle = g; ctx.fill();
+  ctx.fillStyle = INK; ctx.font = F(16); ctx.textAlign = 'center'; ctx.fillText(`피버 ×2 · ${Math.ceil(G.fever)}초`, W / 2, y + 21); ctx.textAlign = 'left';
+}
 function comboHud() {
   if (G.combo <= 0) return; const m = mult(), col = ['#9a8a78', '#6fb36a', '#f0a91a', '#ff8a4a', '#e8573a'][m - 1];
   rr(12, 78, 150, 30, 15); shape('rgba(255,248,231,0.94)', 3, '#ead9b8'); rr(16, 82, 54, 22, 11); shape(col, 0);
   ctx.fillStyle = '#fff'; ctx.font = F(15); ctx.textAlign = 'center'; ctx.fillText(`×${m}`, 43, 99); ctx.fillStyle = INK; ctx.textAlign = 'left'; ctx.font = F(15); ctx.fillText(`콤보 ${G.combo}`, 78, 99);
+  if (!(G.fever > 0)) { const left = (G.nextFever || FEVER_AT) - G.combo; if (left > 0 && left <= 10) { ctx.fillStyle = '#9a7ed0'; ctx.font = F(12); ctx.fillText(`피버까지 ${left}`, 78, 120); } }
 }
 function bossHud() {
   const B = G.boss; if (!B) return; const w = 300, x = W / 2 - w / 2, y = 80;
@@ -2451,7 +2474,7 @@ function render() {
       const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95); g.addColorStop(0, `rgba(${col},0)`); g.addColorStop(1, `rgba(${col},${Math.min(0.6, 0.2 + k * 0.45) * pulse})`); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     }
     for (const pp of G.pops) { ctx.globalAlpha = 1 - pp.t; ctx.font = F(pp.big ? 26 : 20); ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.lineJoin = 'round'; ctx.strokeStyle = '#fff'; ctx.strokeText(pp.text, pp.x, pp.y); ctx.fillStyle = pp.c; ctx.fillText(pp.text, pp.x, pp.y); } ctx.globalAlpha = 1;
-    drawHudCached(); comboHud(); bossHud(); bannerCard(); toastDraw();
+    drawHudCached(); comboHud(); feverFx(); bossHud(); bannerCard(); toastDraw();
   }
   if (G.flash > 0) { ctx.setTransform(K, 0, 0, K, 0, 0); ctx.fillStyle = `rgba(${G.flashC},${G.flash * (RM ? 0.5 : 1.2)})`; ctx.fillRect(0, 0, W, H); }
 }
@@ -2712,7 +2735,7 @@ function musicTick() {
   if (MUS.nextT < AC.currentTime - 0.2) MUS.nextT = AC.currentTime + 0.03;
   // Schedule 0.35 s ahead so a slow frame on a phone cannot starve the music; a step that is already late
   // is skipped instead of being played in a clump.
-  while (MUS.nextT < AC.currentTime + 0.35) { if (MUS.nextT >= AC.currentTime - 0.005) { try { scheduleStep(MUS.song, MUS.step, MUS.nextT); } catch (e) {} } MUS.nextT += MUS.song.step; MUS.step++; }
+  while (MUS.nextT < AC.currentTime + 0.35) { if (MUS.nextT >= AC.currentTime - 0.005) { try { scheduleStep(MUS.song, MUS.step, MUS.nextT); } catch (e) {} } MUS.nextT += MUS.song.step * (G && G.fever > 0 && state === 'play' ? 0.88 : 1); MUS.step++; }
 }
 
 /* ---------- game effects: particles, hit-stop, slow motion, speed lines ---------- */
@@ -3009,7 +3032,7 @@ function continueRun() {
   if (state !== 'over' || !G || (G.only ?? -1) >= 0 || G.finished) return;
   goLandscape(); initAudio(); PART.length = 0; hitStop = 0; slowT = 0;
   const half = Math.floor(score() / 2); G.bonus += half - score(); G.conts = (G.conts || 0) + 1;
-  Object.assign(G, { hearts: 3, temp: 37, combo: 0, obs: [], items: [], pops: [], shots: [], puffs: [], orbsOut: [], since: 0, gap: 520, itemTimer: 2.5, shake: 0, cause: '', newCards: G.newCards || [] });
+  Object.assign(G, { fever: 0, nextFever: FEVER_AT, hearts: 3, temp: 37, combo: 0, obs: [], items: [], pops: [], shots: [], puffs: [], orbsOut: [], since: 0, gap: 520, itemTimer: 2.5, shake: 0, cause: '', newCards: G.newCards || [] });
   Object.assign(player, { y: GROUND, prevY: GROUND, vy: 0, onGround: true, jumps: 0, slide: false, inv: 1.2 });
   G.zoneDist = 0; enterZone(G.zi, false); G.prevZi = -1; G.fade = 1;
   G.toast = { t: 0, text: `${ZONES[G.zi].name} 기후부터 이어 달려요`, sub: `점수가 절반(${half.toLocaleString()}점)이 됐어요` };
