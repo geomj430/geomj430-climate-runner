@@ -192,7 +192,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
   <div id="toolbar" class="toolbar">
     <button id="musicBtn" type="button">음악 끄기</button>
     <button id="muteBtn" type="button">소리 끄기</button>
-    <button id="pauseBtn" type="button">일시정지</button>
+    <button id="pauseBtn" type="button" title="일시정지 (P)">일시정지</button>
   </div>
   <div id="controls" hidden>
     <div class="cl"><button id="slideBtn" type="button">슬라이드</button></div>
@@ -224,6 +224,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     <dl class="howto">
       <dt><kbd>↑</kbd></dt><dd>점프 · 공중에서 한 번 더 누르면 2단 점프</dd>
       <dt><kbd>↓</kbd></dt><dd>슬라이드 · 늘어진 덩굴이나 날아오는 물체 아래로</dd>
+      <dt><kbd>P</kbd></dt><dd>일시정지 · 한 번 더 누르면 계속 달려요</dd>
       <dt><span class="dot" style="background:#7cc4f0"></span> 물병</dt><dd>체온 −0.9°C · 더운 기후에서 나와요</dd>
       <dt><span class="dot" style="background:#ff9a6b"></span> 따뜻한 차</dt><dd>체온 +0.9°C · 추운 기후와 사막의 밤에 나와요</dd>
       <dt><span class="dot" style="background:#ffd75a"></span> 별</dt><dd>관측 데이터 · +20점</dd>
@@ -2821,7 +2822,7 @@ addEventListener('keydown', e => {
   if (['ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); if (e.repeat) return; if (state === 'play') onJump(); else if (state === 'title') startGame(-1); else if (state === 'over') startGame(lastOnly); }
   else if (['ArrowDown', 'KeyS'].includes(e.code)) { e.preventDefault(); keys.down = true; }
   else if (e.code === 'KeyX' || e.code === 'KeyF') { e.preventDefault(); throwOrb(); }
-  else if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
+  else if (e.code === 'KeyP' || e.code === 'Escape' || ['p', 'P', 'ㅔ'].includes(e.key) || e.keyCode === 80) { e.preventDefault(); if (!e.repeat) togglePause(); }
 });
 addEventListener('keyup', e => { if (['ArrowDown', 'KeyS'].includes(e.code)) keys.down = false; });
 /* Touch controls: each side strip is one big touch zone. Pointer events with a touch fallback for old browsers;
