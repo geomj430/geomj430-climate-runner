@@ -1793,7 +1793,7 @@ function update(dt, attract) {
       const o = g.nextObj || mk(choose()); g.nextObj = mk(choose());
       if (o.pit) { o.y = GROUND; o.h = H - GROUND; } else if (o.y === undefined) o.y = GROUND - o.h;
       o.x = W + 40; g.obs.push(o);
-      g.gap = o.w + g.speed * (0.78 + Math.random() * 0.7) + (o.vx > 0 ? o.vx * 0.5 : 0);
+      g.gap = o.w + g.speed * (0.78 + Math.random() * 0.7) * ({ bw: 0.88 }[zz.id] ?? 1) + (o.vx > 0 ? o.vx * 0.5 : 0); // desert: obstacles a little closer together
       // Plan spacing by when each thing reaches the player (movers arrive sooner than their spawn distance suggests).
       const S = g.speed, Px = player.x + 18, X0 = W + 40, n2 = g.nextObj, v1 = o.vx || 0, v2 = n2.vx || 0;
       const D1 = (X0 + o.w / 2 - Px) * S / (S + v1), base2 = (X0 + n2.w / 2 - Px) * S / (S + v2);
