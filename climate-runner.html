@@ -1737,7 +1737,9 @@ function update(dt, attract) {
   g.speed = attract ? 260 : g.fest ? 0 : Math.min(640, 345 + g.dist * 0.0032) + g.loop * 45;
   const dx = g.speed * dt; scroll += dx;
   if (!attract) g.dist += dx;
-  if (!g.bossPending && !g.fest) g.zoneDist = attract ? g.zoneDist + dx * 5 : (g.zoneDist >= ZONE_LEN ? g.zoneDist : Math.min(ZONE_LEN * 0.9, g.zoneDist + dx));
+  // Stage progress follows time at the starting pace (not distance), so every climate lasts about as long even as the run speeds up.
+  const zdx = dx * Math.min(1, 360 / Math.max(1, g.speed));
+  if (!g.bossPending && !g.fest) g.zoneDist = attract ? g.zoneDist + dx * 5 : (g.zoneDist >= ZONE_LEN ? g.zoneDist : Math.min(ZONE_LEN * 0.9, g.zoneDist + zdx));
   g.fade = Math.min(1, g.fade + dt / 1.8); g.banner.t += dt; if (g.toast) g.toast.t += dt;
   g.shake = Math.max(0, g.shake - dt); g.flash = Math.max(0, g.flash - dt);
   if (g.zoneDist >= ZONE_LEN) { g.zoneDist -= ZONE_LEN;
