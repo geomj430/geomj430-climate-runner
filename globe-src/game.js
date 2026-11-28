@@ -1244,7 +1244,7 @@ function step(dt) {
   fwd = clamp(fwd, -1, 1); trn = clamp(trn, -1, 1);
   const run = running || keys.ShiftLeft || keys.ShiftRight;
   // 방향 전환은 부드럽게 가속·감속
-  turnVel += (trn * 1.8 - turnVel) * Math.min(1, dt * 9);
+  turnVel += (trn * 1.4 - turnVel) * Math.min(1, dt * 9);
   if (Math.abs(turnVel) > 1e-4) turn(turnVel * dt);
   const gRaw = hDir(P);
   const onWater = gRaw < -0.05;
@@ -1300,7 +1300,16 @@ function updateCamera(dt) {
   if (globeView) {
     tPos = tmpV.copy(orbitDir).multiplyScalar(orbitDist); tLook = tmpV2.set(0, 0, 0); tUp = UP;
   } else {
-    camF.lerp(F, 1 - Math.exp(-dt * 3.2)); camF.addScaledVector(P, -P.dot(camF));
+    // 카메라는 캐릭터 방향을 천천히 따라 돌아요 (최대 초당 약 40°)
+    camF.addScaledVector(P, -P.dot(camF));
+    if (camF.lengthSq() > 1e-6) {
+      camF.normalize();
+      const ang = Math.atan2(tmpV4.crossVectors(camF, F).dot(P), clamp(camF.dot(F), -1, 1));
+      let stepA = clamp(ang * (1 - Math.exp(-dt * 1.5)), -0.7 * dt, 0.7 * dt);
+      // 너무 많이 뒤처지면(약 45° 넘게) 그만큼만 따라잡아요
+      if (Math.abs(ang - stepA) > 0.8) stepA = ang - Math.sign(ang) * 0.8;
+      camF.applyAxisAngle(P, stepA);
+    }
     if (camF.lengthSq() < 1e-6) camF.copy(F); camF.normalize();
     const anchor = tmpV3.copy(P).multiplyScalar(R + camAlt);
     const d = camDist * (ballooning ? 1.5 : 1);
