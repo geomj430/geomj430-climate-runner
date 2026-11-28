@@ -1407,8 +1407,33 @@ const hasProgress = Object.keys(save.stamps).length || save.mission > 0;
 if (hasProgress) { $('#bStart').textContent = '이어서 탐험하기'; $('#bReset').hidden = false; }
 if (IS_TOUCH) { $('#keysDesk').hidden = true; $('#keysTouch').hidden = false; }
 $('#bReset').onclick = () => { if (confirm('처음부터 다시 시작할까요? 모은 도장과 별이 지워져요.')) { save = blankSave(); persist(); location.reload(); } };
+// 가로 화면: 시작하면 전체 화면으로 바꾸고 가로로 고정해요.
+// 아이폰 사파리처럼 고정이 안 되는 브라우저는 세로일 때 안내를 띄우고 잠시 멈춰요.
+let started = false, rotatePaused = false;
+function goLandscape() {
+  if (!IS_TOUCH) return;
+  const lock = () => { try { const pr = screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'); if (pr && pr.catch) pr.catch(() => {}); } catch (e) {} };
+  try {
+    const el = document.documentElement, fs = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!(document.fullscreenElement || document.webkitFullscreenElement) && fs) {
+      const pr = fs.call(el, { navigationUI: 'hide' });
+      if (pr && pr.then) pr.then(lock, lock); else lock();
+    } else lock();
+  } catch (e) { lock(); }
+}
+function checkOrient() {
+  const need = started && IS_TOUCH && matchMedia('(orientation: portrait)').matches;
+  $('#rotate').hidden = !need;
+  if (need && !rotatePaused) { rotatePaused = true; paused = true; for (const k in keys) keys[k] = false; joy.active = false; $('#joy').hidden = true; }
+  else if (!need && rotatePaused) { rotatePaused = false; if ($('#card').hidden && $('#book').hidden) paused = false; }
+}
+addEventListener('resize', checkOrient);
+addEventListener('orientationchange', () => setTimeout(checkOrient, 150));
+canvas.addEventListener('pointerdown', () => { if (started && IS_TOUCH && !(document.fullscreenElement || document.webkitFullscreenElement)) goLandscape(); });
 $('#bStart').onclick = () => {
+  goLandscape(); started = true;
   $('#start').hidden = true; $('#hud').hidden = false; paused = false;
+  checkOrient();
   canvas.focus({ preventScroll: true });
   try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {}
   updateHere();
