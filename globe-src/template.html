@@ -6,6 +6,10 @@
 <meta name="theme-color" content="#86bde3">
 <meta name="description" content="실제 지구의 지형과 쾨펜 기후가 반영된 3D 만화풍 지구본 위를 걸어 다니며 세계의 기후·문화·지형을 배우는 탐험 게임">
 <title>지구본 탐험대</title>
+<link rel="manifest" href="globe.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
@@ -123,6 +127,14 @@ button{font-family:var(--display);color:var(--ink);cursor:pointer}
 kbd{font:12px var(--display);background:#f3ead4;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px}
 #loading{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:linear-gradient(180deg,#86bde3,#dfeaf0);color:var(--ink);font:22px var(--display);text-align:center}
 #loading small{display:block;font:14px var(--body);opacity:.75;margin-top:6px}
+#rotate{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(180deg,#86bde3,#dfeaf0)}
+#rotate .card{background:var(--panel);border:3px solid var(--line);border-bottom-width:6px;border-radius:24px;padding:26px 22px;max-width:320px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+#rotate .phone{width:46px;height:80px;border:5px solid var(--ink);border-radius:12px;background:#fff;position:relative;animation:rotphone 2.2s ease-in-out infinite}
+#rotate .phone::after{content:"";position:absolute;left:50%;bottom:6px;width:10px;height:4px;margin-left:-5px;border-radius:2px;background:var(--ink)}
+#rotate b{font:22px var(--display);font-weight:400;margin-top:6px}
+#rotate span{color:var(--muted);font-size:14px;line-height:1.6}
+@keyframes rotphone{0%,20%{transform:rotate(0)}50%,80%{transform:rotate(-90deg)}100%{transform:rotate(0)}}
+@media (prefers-reduced-motion:reduce){#rotate .phone{animation:none;transform:rotate(-90deg)}}
 .confetti{position:fixed;top:-40px;font-size:26px;z-index:25;pointer-events:none;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
 
@@ -220,6 +232,7 @@ body.touch #zoom{bottom:calc(max(14px,env(safe-area-inset-bottom)) + 76px)}
     <div class="keys" id="keysTouch" hidden>왼쪽 아래를 누른 채 움직이면 그 방향으로 이동 · 오른쪽을 끌면 카메라 회전 · 두 손가락으로 확대</div>
   </div>
 </div>
+<div id="rotate" hidden role="alert"><div class="card"><div class="phone" aria-hidden="true"></div><b>휴대폰을 가로로 돌려 주세요</b><span>지구본 탐험대는 가로 화면에서 즐기는 게임이에요. 가로로 돌리면 바로 이어서 할 수 있어요.</span></div></div>
 <div id="loading">지구를 만드는 중…<small id="loadMsg">기후 지도와 지형을 불러오고 있어요</small></div>
 
 <script>/*THREE*/</script>
